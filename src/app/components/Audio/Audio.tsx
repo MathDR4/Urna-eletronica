@@ -25,3 +25,5 @@ export const Audio = forwardRef((props: AudioProps, ref) => {
         </>
     );
 });
+
+Audio.displayName = 'Audio';
