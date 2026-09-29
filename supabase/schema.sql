@@ -27,3 +27,41 @@ on public.votos
 for delete
 to anon
 using (true);
+
+create table if not exists public.sessoes_votacao (
+  id uuid primary key default gen_random_uuid(),
+  urna_numero integer not null check (urna_numero between 1 and 5),
+  discipulado text not null,
+  status text not null default 'aguardando' check (status in ('aguardando', 'liberada', 'consumida', 'cancelada')),
+  criada_em timestamptz not null default now(),
+  liberada_em timestamptz,
+  consumida_em timestamptz
+);
+
+alter table public.sessoes_votacao enable row level security;
+
+create policy "Permitir criar sessões"
+on public.sessoes_votacao for insert to anon with check (true);
+
+create policy "Permitir consultar sessões"
+on public.sessoes_votacao for select to anon using (true);
+
+create policy "Permitir atualizar sessões"
+on public.sessoes_votacao for update to anon using (true) with check (true);
+
+create table if not exists public.estacoes_urna (
+  id uuid primary key default gen_random_uuid(),
+  codigo text not null unique,
+  urna_numero integer not null unique check (urna_numero between 1 and 5),
+  ativa boolean not null default true,
+  ultimo_acesso timestamptz not null default now(),
+  criada_em timestamptz not null default now()
+);
+
+alter table public.estacoes_urna enable row level security;
+create policy "Permitir cadastrar estação" on public.estacoes_urna for insert to anon with check (true);
+create policy "Permitir consultar estação" on public.estacoes_urna for select to anon using (true);
+create policy "Permitir atualizar estação" on public.estacoes_urna for update to anon using (true) with check (true);
+
+alter table public.votos add column if not exists estacao_id uuid references public.estacoes_urna(id);
+alter table public.votos add column if not exists urna_numero integer;

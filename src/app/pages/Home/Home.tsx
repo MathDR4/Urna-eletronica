@@ -1,7 +1,7 @@
 "use client";
 
 import { CargoVotacao, DisplayNumero, InformacoesEsquerda, InformacoesDireita, Legenda, Numero, NumeroPisca, Tela, UrnaEletronica, AreaVotacao, CardCandidato, CardVicePrefeito, Imagem, EspacoFoto, Linha, Teclado, ContainerNumeros, ContainerAcoes, TituloVotacao, ListaInformacoes, CardInformacoes, ListaDetalhesInformacoes, Braille, CardVotoEmBranco, CardFimVotacao, BotaoProximoVoto, CardVotoNulo } from "./styles";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Braille1 from '../../assets/imagens/braille/braille1.png';
 import Braille2 from '../../assets/imagens/braille/braille2.png';
 import Braille3 from '../../assets/imagens/braille/braille3.png';
@@ -46,6 +46,7 @@ const Home = () => {
     const [votoEmBranco, setVotoEmBranco] = useState<boolean>(false);
     const [votoNulo, setVotoNulo] = useState<boolean>(false);
     const [finalizouVotacao, setFinalizouVotacao] = useState<boolean>(false);
+    const [sessaoLiberada, setSessaoLiberada] = useState<any>(null);
     const [possuiVicePrefeito, setVicePrefeito] = useState<boolean>(false);
     const [votos, setVotos] = useState<RegistroVoto[]>(() => {
         if (typeof window === 'undefined') return [];
@@ -57,6 +58,17 @@ const Home = () => {
     });
     const audioRefDigitoUrna = useRef<{ playAudio: () => void, pausarAudio: () => void } | null>(null);
     const audioRefConfirmaUrna = useRef<{ playAudio: () => void, pausarAudio: () => void } | null>(null);
+
+    useEffect(() => {
+        try {
+            if (!localStorage.getItem('estacao-id')) {
+                window.location.href = '/configurar-urna';
+                return;
+            }
+            const sessao = JSON.parse(localStorage.getItem('urna-sessao') || 'null');
+            if (sessao?.status === 'liberada') setSessaoLiberada(sessao);
+        } catch { setSessaoLiberada(null); }
+    }, []);
 
     const clicou = (digito: number) => {
         const novosNumeros = [...numeros];
@@ -125,6 +137,8 @@ const Home = () => {
         localStorage.setItem(CHAVE_REGISTRO_VOTOS, JSON.stringify(registrosAtualizados));
 
         if (supabase) {
+            const estacaoId = localStorage.getItem('estacao-id');
+            const urnaConfigurada = localStorage.getItem('urna-configurada');
             const { error } = await supabase.from('votos').insert({
                 numero: registro.numero,
                 nome: registro.nome,
@@ -132,9 +146,17 @@ const Home = () => {
                 cor: registro.cor,
                 tipo: registro.tipo,
                 data_hora: registro.dataHora,
+                estacao_id: estacaoId || null,
+                urna_numero: urnaConfigurada ? Number(urnaConfigurada) : null,
             });
             if (error) console.error('Não foi possível registrar o voto no Supabase:', error);
+            if (!error && sessaoLiberada?.id) {
+                await supabase.from('sessoes_votacao').update({ status: 'consumida', consumida_em: new Date().toISOString() }).eq('id', sessaoLiberada.id);
+            }
         }
+
+        localStorage.removeItem('urna-sessao');
+        setSessaoLiberada(null);
 
         setFinalizouVotacao(true);
         setVotoEmBranco(false);
@@ -151,6 +173,8 @@ const Home = () => {
         setVotoNulo(false);
         setVicePrefeito(false);
     };
+
+    if (!sessaoLiberada) return <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: '#111827', color: '#fff', fontFamily: 'Arial, sans-serif', textAlign: 'center', padding: 24 }}><div><h1>Urna aguardando liberação</h1><p>Informe seu discipulado na tela de entrada e aguarde o mesário liberar uma urna.</p><a href="/entrada" style={{ color: '#93c5fd' }}>Ir para identificação</a></div></div>;
 
     return (
         <>
