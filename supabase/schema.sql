@@ -15,3 +15,9 @@ on public.votos
 for insert
 to anon
 with check (true);
+
+create policy "Permitir consulta da apuração"
+on public.votos
+for select
+to anon
+using (true);
