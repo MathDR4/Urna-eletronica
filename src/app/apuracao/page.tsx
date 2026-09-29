@@ -43,7 +43,7 @@ export default function ApuracaoPage() {
       atual.total += 1;
       grupos.set(chave, atual);
     });
-    return [...grupos.values()].sort((a, b) => b.total - a.total);
+    return Array.from(grupos.values()).sort((a, b) => b.total - a.total);
   }, [votos]);
 
   const exportarCsv = () => {
