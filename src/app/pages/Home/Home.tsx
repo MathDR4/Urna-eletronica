@@ -1,6 +1,6 @@
 "use client";
 
-import { CargoVotacao, DisplayNumero, InformacoesEsquerda, InformacoesDireita, Legenda, Numero, NumeroPisca, Tela, UrnaEletronica, AreaVotacao, CardCandidato, CardVicePrefeito, Imagem, EspacoFoto, Linha, Teclado, ContainerNumeros, ContainerAcoes, TituloVotacao, ListaInformacoes, CardInformacoes, ListaDetalhesInformacoes, Braille, CardVotoEmBranco, CardFimVotacao, CardVotoNulo } from "./styles";
+import { CargoVotacao, DisplayNumero, InformacoesEsquerda, InformacoesDireita, Legenda, Numero, NumeroPisca, Tela, UrnaEletronica, AreaVotacao, CardCandidato, CardVicePrefeito, Imagem, EspacoFoto, Linha, Teclado, ContainerNumeros, ContainerAcoes, TituloVotacao, ListaInformacoes, CardInformacoes, ListaDetalhesInformacoes, Braille, CardVotoEmBranco, CardFimVotacao, BotaoProximoVoto, CardVotoNulo } from "./styles";
 import { useRef, useState } from "react";
 import Braille1 from '../../assets/imagens/braille/braille1.png';
 import Braille2 from '../../assets/imagens/braille/braille2.png';
@@ -128,6 +128,17 @@ const Home = () => {
         setVotoNulo(false);
     };
 
+    const proximoVoto = () => {
+        setFinalizouVotacao(false);
+        setEtapaVoto(dados[0].etapa);
+        setNumeros(Array(dados[0].numeros).fill(null));
+        setCandidato(null);
+        setTextoCargoVotacao(dados[0].titulo);
+        setVotoEmBranco(false);
+        setVotoNulo(false);
+        setVicePrefeito(false);
+    };
+
     return (
         <>
             <UrnaEletronica>
@@ -210,6 +221,9 @@ const Home = () => {
                         ) : (
                             <CardFimVotacao>
                                 FIM
+                                <BotaoProximoVoto onClick={proximoVoto}>
+                                    PRÓXIMO VOTO
+                                </BotaoProximoVoto>
                             </CardFimVotacao>
                         )}
                     </AreaVotacao>

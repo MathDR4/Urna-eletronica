@@ -282,5 +282,22 @@ export const CardFimVotacao = styled.div(({ theme }) => (css`
     background: #fff;
     width: 100%;
     align-items: center;
+    flex-direction: column;
+    gap: 24px;
 `));
+
+export const BotaoProximoVoto = styled.button`
+    border: 0;
+    border-radius: 6px;
+    padding: 14px 24px;
+    background: #48c079;
+    color: #111;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+
+    &:hover {
+        filter: brightness(0.92);
+    }
+`;
 
