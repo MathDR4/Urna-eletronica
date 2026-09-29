@@ -14,9 +14,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
     children,
-}: {
-    children: React.ReactNode
-}) {
+}: any) {
     return (
         <html lang="en">
             <body className={inter.className} style={{ display: 'flex', justifyContent: 'center', background: '#fff' }}>
