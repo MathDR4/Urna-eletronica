@@ -15,7 +15,7 @@ export default function RootLayout({
 }: any) {
     return (
         <html lang="en">
-            <body className={inter.className} style={{ display: 'flex', justifyContent: 'center', background: '#fff' }}>
+            <body className={inter.className}>
                 <Providers>{children}</Providers>
             </body>
         </html>
