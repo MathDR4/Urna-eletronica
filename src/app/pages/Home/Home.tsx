@@ -22,6 +22,7 @@ import audioDigitoUrna from '../../assets/sons/digito-urna.mp3';
 import audioConfirmaUrna from '../../assets/sons/confirma-urna.mp3';
 import { Audio } from "@/app/components/Audio/Audio";
 import { dados as dadosEleicao} from "@/app/model/dados";
+import { supabase } from "@/app/lib/supabase";
 
 const CHAVE_REGISTRO_VOTOS = 'urna-igreja-votos';
 
@@ -106,7 +107,7 @@ const Home = () => {
         setVicePrefeito(false);
     };
 
-    const confirma = () => {
+    const confirma = async () => {
         audioRefConfirmaUrna.current?.playAudio();
 
         const numeroDigitado = Number((numeros.filter(num => num !== null) as number[]).join(''));
@@ -122,6 +123,18 @@ const Home = () => {
         const registrosAtualizados = [...votos, registro];
         setVotos(registrosAtualizados);
         localStorage.setItem(CHAVE_REGISTRO_VOTOS, JSON.stringify(registrosAtualizados));
+
+        if (supabase) {
+            const { error } = await supabase.from('votos').insert({
+                numero: registro.numero,
+                nome: registro.nome,
+                chapa: registro.chapa,
+                cor: registro.cor,
+                tipo: registro.tipo,
+                data_hora: registro.dataHora,
+            });
+            if (error) console.error('Não foi possível registrar o voto no Supabase:', error);
+        }
 
         setFinalizouVotacao(true);
         setVotoEmBranco(false);
