@@ -1,6 +1,6 @@
 "use client";
 
-import { CargoVotacao, DisplayNumero, InformacoesEsquerda, InformacoesDireita, Legenda, Numero, NumeroPisca, Tela, UrnaEletronica, AreaVotacao, CardCandidato, CardVicePrefeito, Imagem, Linha, Teclado, ContainerNumeros, ContainerAcoes, TituloVotacao, ListaInformacoes, CardInformacoes, ListaDetalhesInformacoes, Braille, CardVotoEmBranco, CardFimVotacao, CardVotoNulo } from "./styles";
+import { CargoVotacao, DisplayNumero, InformacoesEsquerda, InformacoesDireita, Legenda, Numero, NumeroPisca, Tela, UrnaEletronica, AreaVotacao, CardCandidato, CardVicePrefeito, Imagem, EspacoFoto, Linha, Teclado, ContainerNumeros, ContainerAcoes, TituloVotacao, ListaInformacoes, CardInformacoes, ListaDetalhesInformacoes, Braille, CardVotoEmBranco, CardFimVotacao, CardVotoNulo } from "./styles";
 import { useRef, useState } from "react";
 import Braille1 from '../../assets/imagens/braille/braille1.png';
 import Braille2 from '../../assets/imagens/braille/braille2.png';
@@ -23,6 +23,18 @@ import audioConfirmaUrna from '../../assets/sons/confirma-urna.mp3';
 import { Audio } from "@/app/components/Audio/Audio";
 import { dados as dadosEleicao} from "@/app/model/dados";
 
+const CHAVE_REGISTRO_VOTOS = 'urna-igreja-votos';
+
+type RegistroVoto = {
+    id: string;
+    numero: number | null;
+    nome: string;
+    chapa: string;
+    cor: string;
+    tipo: 'válido' | 'branco' | 'nulo';
+    dataHora: string;
+};
+
 const Home = () => {
 
     const dados: Etapa[] = dadosEleicao;
@@ -34,6 +46,14 @@ const Home = () => {
     const [votoNulo, setVotoNulo] = useState<boolean>(false);
     const [finalizouVotacao, setFinalizouVotacao] = useState<boolean>(false);
     const [possuiVicePrefeito, setVicePrefeito] = useState<boolean>(false);
+    const [votos, setVotos] = useState<RegistroVoto[]>(() => {
+        if (typeof window === 'undefined') return [];
+        try {
+            return JSON.parse(localStorage.getItem(CHAVE_REGISTRO_VOTOS) || '[]');
+        } catch {
+            return [];
+        }
+    });
     const audioRefDigitoUrna = useRef<{ playAudio: () => void, pausarAudio: () => void } | null>(null);
     const audioRefConfirmaUrna = useRef<{ playAudio: () => void, pausarAudio: () => void } | null>(null);
 
@@ -41,16 +61,19 @@ const Home = () => {
         const novosNumeros = [...numeros];
         const posicaoVazia = novosNumeros.findIndex(num => num === null);
         if (posicaoVazia !== -1) {
+            setCandidato(null);
+            setVotoNulo(false);
+            setVotoEmBranco(false);
             novosNumeros[posicaoVazia] = digito;
             setNumeros(novosNumeros);
             audioRefDigitoUrna.current?.playAudio();
-            if(etapaVoto === 1 && posicaoVazia === 4 || etapaVoto === 2 && posicaoVazia === 1) {
+            if(posicaoVazia === dados[0].numeros - 1) {
                 const dadosVotacao = dados.find(d => d.etapa === etapaVoto);
                 const numerosCandidato = Number((novosNumeros.filter(num => num !== null) as number[]).join(''));
                 const candidato = dadosVotacao?.candidatos.find(d => d.numero === numerosCandidato);
                 if(candidato) {
                     setCandidato(candidato);
-                    setVicePrefeito(etapaVoto === 1 ? false : true);
+                    setVicePrefeito(false);
                 } else {
                     setVotoNulo(true);
                 }
@@ -74,39 +97,35 @@ const Home = () => {
     };
 
     const corrige = () => {
-        if(etapaVoto === 1) {
-            setEtapaVoto(dados[0]?.etapa);
-            setNumeros(Array(dados[0]?.numeros).fill(null));
-            setCandidato(null);
-            setTextoCargoVotacao(dados[0]?.titulo);
-            setVotoEmBranco(false);
-            setVotoNulo(false);
-        } if(etapaVoto === 2)  {
-            setEtapaVoto(dados[1]?.etapa);
-            setNumeros(Array(dados[1]?.numeros).fill(null));
-            setCandidato(null);
-            setTextoCargoVotacao(dados[1]?.titulo);
-            setVotoEmBranco(false);
-            setVotoNulo(false);
-            setVicePrefeito(false);
-        }
+        setEtapaVoto(dados[0].etapa);
+        setNumeros(Array(dados[0].numeros).fill(null));
+        setCandidato(null);
+        setTextoCargoVotacao(dados[0].titulo);
+        setVotoEmBranco(false);
+        setVotoNulo(false);
+        setVicePrefeito(false);
     };
 
     const confirma = () => {
         audioRefConfirmaUrna.current?.playAudio();
-        if(etapaVoto === 1) {
-            setEtapaVoto(dados[1]?.etapa);
-            setNumeros(Array(dados[1]?.numeros).fill(null));
-            setCandidato(null);
-            setTextoCargoVotacao(dados[1]?.titulo);
-            setVotoEmBranco(false);
-            setVotoNulo(false);
-        } else {
-            setEtapaVoto((prevEtapaVoto) => prevEtapaVoto + 1);
-            setFinalizouVotacao(true);
-            setVotoEmBranco(false);
-            setVotoNulo(false);
-        }
+
+        const numeroDigitado = Number((numeros.filter(num => num !== null) as number[]).join(''));
+        const registro: RegistroVoto = {
+            id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            numero: candidato ? candidato.numero : numeroDigitado || null,
+            nome: candidato?.nome || '',
+            chapa: candidato?.partido || '',
+            cor: candidato?.cor || '',
+            tipo: votoEmBranco ? 'branco' : votoNulo || !candidato ? 'nulo' : 'válido',
+            dataHora: new Date().toISOString(),
+        };
+        const registrosAtualizados = [...votos, registro];
+        setVotos(registrosAtualizados);
+        localStorage.setItem(CHAVE_REGISTRO_VOTOS, JSON.stringify(registrosAtualizados));
+
+        setFinalizouVotacao(true);
+        setVotoEmBranco(false);
+        setVotoNulo(false);
     };
 
     return (
@@ -129,7 +148,8 @@ const Home = () => {
                                             <ListaInformacoes>
                                                 <li>Número:</li>
                                                 <li>Nome:</li>
-                                                <li>Partido:</li>
+                                                <li>Chapa:</li>
+                                                <li>Cor:</li>
                                             </ListaInformacoes>
                                             <ListaDetalhesInformacoes>
                                                 <li>
@@ -145,6 +165,9 @@ const Home = () => {
                                                 </li>
                                                 <li>
                                                     { candidato?.partido || ''}
+                                                </li>
+                                                <li>
+                                                    { candidato?.cor || ''}
                                                 </li>
                                             </ListaDetalhesInformacoes>
                                         </CardInformacoes>
@@ -168,11 +191,8 @@ const Home = () => {
                                 <InformacoesDireita>
                                     { candidato ? (
                                         <CardCandidato>
-                                            <Imagem 
-                                                src={`candidatos/${etapaVoto === 1 ? 'vereador' : 'prefeito'}/${candidato?.fotos[0]?.url}`}
-                                                alt={candidato?.fotos[0]?.legenda}
-                                            ></Imagem>
-                                            { etapaVoto === 1 ? 'Vereador' : 'Prefeito' }
+                                            <EspacoFoto>FOTO</EspacoFoto>
+                                            Chapa
                                         </CardCandidato>
                                     ) : null}
                                     

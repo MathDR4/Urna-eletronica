@@ -22,18 +22,21 @@ export const Tela = styled.div`
 export const AreaVotacao = styled.div`
     flex: 1;
     display: flex;
-    padding: 20px 40px;
-    background: #252122;
+    padding: 18px 24px;
+    background: #fff;
     margin-top: 5px;
+    color: #111;
 `;
 
 export const CargoVotacao = styled.div(({ theme }) => (css`
-    height: 50px;
+    height: 42px;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 0 20px;
-    font-size: ${theme.fontSizes.h3};
+    font-size: 22px;
+    font-weight: 700;
+    color: #111;
 `));
 
 export const DisplayNumero = styled.div`
@@ -68,8 +71,11 @@ export const Legenda = styled.div(({ theme }) => (css`
 
 export const TituloVotacao = styled.div`
     display: flex;
-    gap: 130px;
-    padding: 5px;
+    justify-content: space-between;
+    padding: 4px 8px 8px;
+    color: #111;
+    font-size: 13px;
+    font-weight: 700;
 `;
 
 export const InformacoesEsquerda = styled.div(({ theme }) => (css`
@@ -77,12 +83,13 @@ export const InformacoesEsquerda = styled.div(({ theme }) => (css`
     display: flex;
     flex-direction: column;
     padding-bottom: 10px;
-    height: 295px;
+    height: 255px;
     background-color: ${theme.colors.light};
+    color: #111;
 `));
 
 export const InformacoesDireita = styled.div(({ theme }) => (css`
-    width: 90px;
+    width: 110px;
     display: flex;
     flex-direction: column;
     align-items: flex-end;
@@ -105,6 +112,20 @@ export const CardVicePrefeito = styled.div`
 
 export const Imagem = styled.img`
     width: 100%;
+`;
+
+export const EspacoFoto = styled.div`
+    width: 86px;
+    height: 96px;
+    margin: 0 auto 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px dashed #9a9a9a;
+    background: #f4f4f4;
+    color: #777;
+    font-size: 12px;
+    font-weight: 700;
 `;
 
 export const Braille = styled.img<{ cor?: 'branco' | 'corrige' | 'confirma' }>`
@@ -177,6 +198,7 @@ export const ContainerAcoes = styled.div`
 
 export const CardInformacoes = styled.div`
     display: flex;
+    min-height: 125px;
 `;
 
 export const ListaInformacoes = styled.div(({ theme }) => (css`
@@ -201,6 +223,8 @@ export const ListaInformacoes = styled.div(({ theme }) => (css`
 
 export const ListaDetalhesInformacoes = styled.ul`
     list-style: none;
+    color: #111;
+    font-size: 16px;
 
     li:first-child {
         margin-top: 0;
@@ -208,6 +232,10 @@ export const ListaDetalhesInformacoes = styled.ul`
 
     li {
         margin-top: 15px;
+    }
+
+    li:last-child {
+        font-weight: 700;
     }
 `;
 
