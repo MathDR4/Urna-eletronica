@@ -21,3 +21,9 @@ on public.votos
 for select
 to anon
 using (true);
+
+create policy "Permitir zerar votos"
+on public.votos
+for delete
+to anon
+using (true);
