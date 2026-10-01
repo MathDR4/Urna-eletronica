@@ -3,17 +3,18 @@ import styled, { css, keyframes } from 'styled-components';
 export const UrnaEletronica = styled.div(({ theme }) => (css`
     display: flex;
     flex-direction: column;
-    flex-wrap: wrap;
+    align-items: center;
     background-color: ${theme.colors.primary};
-    padding: 0 60px 0 60px;
-    align-items: end;
+    padding: 0 clamp(12px, 5vw, 60px);
     border-radius: 6px;
     border: 1px solid #A8A79D;
     position: relative;
+    width: min(100%, 1180px);
+    margin: 0 auto;
 `));
 
 export const Tela = styled.div`
-    width: 680px;
+    width: min(680px, 100%);
     height: 320px;
     display: flex;
     flex-direction: column;
@@ -171,8 +172,8 @@ export const Braille = styled.img<{ cor?: 'branco' | 'corrige' | 'confirma' }>`
 export const Teclado = styled.div`
     display: flex;
     flex-direction: row;
-    margin-left: 30px;
-    width: 410px;
+    margin-left: 0;
+    width: min(410px, 100%);
     margin-top: 40px;
     margin-bottom: 40px;
 `;

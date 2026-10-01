@@ -66,7 +66,12 @@ const Home = () => {
                 return;
             }
             const sessao = JSON.parse(localStorage.getItem('urna-sessao') || 'null');
-            if (sessao?.status === 'liberada') setSessaoLiberada(sessao);
+            if (!sessao?.id || sessao.status !== 'liberada') { localStorage.removeItem('urna-sessao'); return; }
+            if (!supabase) { localStorage.removeItem('urna-sessao'); return; }
+            supabase.from('sessoes_votacao').select('*').eq('id', sessao.id).eq('status', 'liberada').maybeSingle().then(({ data }) => {
+                if (data) setSessaoLiberada(data);
+                else localStorage.removeItem('urna-sessao');
+            });
         } catch { setSessaoLiberada(null); }
     }, []);
 
@@ -149,8 +154,12 @@ const Home = () => {
                 estacao_id: estacaoId || null,
                 urna_numero: urnaConfigurada ? Number(urnaConfigurada) : null,
             });
-            if (error) console.error('Não foi possível registrar o voto no Supabase:', error);
-            if (!error && sessaoLiberada?.id) {
+            if (error) {
+                console.error('Não foi possível registrar o voto no Supabase:', error);
+                alert('Não foi possível registrar o voto. A urna continuará aberta para tentar novamente.');
+                return;
+            }
+            if (sessaoLiberada?.id) {
                 await supabase.from('sessoes_votacao').update({ status: 'consumida', consumida_em: new Date().toISOString() }).eq('id', sessaoLiberada.id);
             }
         }
@@ -158,9 +167,10 @@ const Home = () => {
         localStorage.removeItem('urna-sessao');
         setSessaoLiberada(null);
 
-        setFinalizouVotacao(true);
+        setFinalizouVotacao(false);
         setVotoEmBranco(false);
         setVotoNulo(false);
+        window.setTimeout(() => { window.location.href = '/entrada'; }, 900);
     };
 
     const proximoVoto = () => {
