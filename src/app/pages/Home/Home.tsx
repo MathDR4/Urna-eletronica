@@ -64,12 +64,12 @@ const Home = () => {
         try {
             const cidade = cidadeAtual();
             const direto = cidade === 'goiania' && (new URLSearchParams(window.location.search).get('direto') === '1' || window.location.pathname === '/goiania/urna' || window.location.pathname === '/goiania/entrada');
-            if (!localStorage.getItem('estacao-id')) {
-                window.location.href = `/configurar-urna?cidade=${cidade}`;
+            if (direto) {
+                setSessaoLiberada({ cidade_slug: cidade, status: 'liberada', direto: true });
                 return;
             }
-            if (cidade === 'goiania' && direto) {
-                setSessaoLiberada({ cidade_slug: cidade, status: 'liberada', direto: true });
+            if (!localStorage.getItem('estacao-id')) {
+                window.location.href = `/configurar-urna?cidade=${cidade}`;
                 return;
             }
             const sessao = JSON.parse(localStorage.getItem('urna-sessao') || 'null');
