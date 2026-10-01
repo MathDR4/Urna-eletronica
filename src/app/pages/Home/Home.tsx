@@ -63,7 +63,7 @@ const Home = () => {
     useEffect(() => {
         try {
             const cidade = cidadeAtual();
-            const direto = cidade === 'goiania' && (new URLSearchParams(window.location.search).get('direto') === '1' || window.location.pathname === '/goiania/urna');
+            const direto = cidade === 'goiania' && (new URLSearchParams(window.location.search).get('direto') === '1' || window.location.pathname === '/goiania/urna' || window.location.pathname === '/goiania/entrada');
             if (!localStorage.getItem('estacao-id')) {
                 window.location.href = `/configurar-urna?cidade=${cidade}`;
                 return;
