@@ -18,7 +18,9 @@ export default function GraficoPage() {
 
   useEffect(() => {
     const parametros = new URLSearchParams(window.location.search);
-    const modoDemo = parametros.get('demo') === '1';
+    // O gráfico público sempre começa no modo de suspense. Use real=1 apenas
+    // para inspeção técnica sem votos fictícios.
+    const modoDemo = parametros.get('real') !== '1';
     setModoSuspense(modoDemo);
     let relogio: number | undefined;
     if (modoDemo) {
