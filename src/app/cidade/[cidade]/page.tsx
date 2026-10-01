@@ -9,7 +9,7 @@ export default function CidadePage() {
   const slug = cidadeValida(params?.cidade);
   const cidade = cidades[slug];
   const links = [
-    [`/${slug}/entrada`, 'Urna / entrada'],
+    [`/${slug}/urna`, slug === 'goiania' ? 'Urna direta' : 'Urna / entrada'],
     [`/${slug}/mesario`, 'Painel do mesário'],
     [`/${slug}/configurar-urna`, 'Configurar computador'],
     [`/${slug}/apuracao`, 'Relatório de apuração'],

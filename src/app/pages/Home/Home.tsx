@@ -63,8 +63,13 @@ const Home = () => {
     useEffect(() => {
         try {
             const cidade = cidadeAtual();
+            const direto = new URLSearchParams(window.location.search).get('direto') === '1';
             if (!localStorage.getItem('estacao-id')) {
                 window.location.href = `/configurar-urna?cidade=${cidade}`;
+                return;
+            }
+            if (cidade === 'goiania' && direto) {
+                setSessaoLiberada({ cidade_slug: cidade, status: 'liberada', direto: true });
                 return;
             }
             const sessao = JSON.parse(localStorage.getItem('urna-sessao') || 'null');
