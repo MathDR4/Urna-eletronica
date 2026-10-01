@@ -65,3 +65,4 @@ create policy "Permitir atualizar estação" on public.estacoes_urna for update 
 
 alter table public.votos add column if not exists estacao_id uuid references public.estacoes_urna(id);
 alter table public.votos add column if not exists urna_numero integer;
+alter table public.sessoes_votacao add column if not exists estacao_id uuid references public.estacoes_urna(id);

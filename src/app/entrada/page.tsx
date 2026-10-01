@@ -14,9 +14,10 @@ export default function EntradaPage() {
 
   useEffect(() => {
     const cliente = supabase;
-    if (!cliente || !urna) return;
+    const estacaoId = localStorage.getItem('estacao-id');
+    if (!cliente || !urna || !estacaoId) return;
     const verificar = async () => {
-      const { data } = await cliente.from('sessoes_votacao').select('*').eq('urna_numero', Number(urna)).eq('status', 'liberada').order('liberada_em', { ascending: false }).limit(1).maybeSingle();
+      const { data } = await cliente.from('sessoes_votacao').select('*').eq('urna_numero', Number(urna)).eq('estacao_id', estacaoId).eq('status', 'liberada').order('liberada_em', { ascending: false }).limit(1).maybeSingle();
       if (data) { localStorage.setItem('urna-sessao', JSON.stringify(data)); window.location.href = '/'; }
     };
     verificar();
