@@ -31,7 +31,9 @@ export default function GraficoPage() {
       if (!salvo) window.sessionStorage.setItem(chave, String(inicio));
       setInicioSuspense(inicio);
       setDelayMs(minutos * 60 * 1000);
-      relogio = window.setInterval(() => setAgora(Date.now()), 1000);
+      // O painel público avança em blocos de 5 minutos para não ficar
+      // alterando os números a cada segundo durante a apresentação.
+      relogio = window.setInterval(() => setAgora(Date.now()), 300000);
     }
     const cliente = supabase;
     if (!cliente) return () => { if (relogio) window.clearInterval(relogio); };
@@ -69,10 +71,14 @@ export default function GraficoPage() {
     const progresso = Math.min(1, Math.max(0, (agora - inicioSuspense) / delayMs));
     const transicao = Math.min(1, Math.max(0, (progresso - 0.7) / 0.3));
     const reais = new Map(gruposReais.map(grupo => [grupo.numero, grupo]));
+    const totalReal = gruposReais.reduce((total, grupo) => total + grupo.total, 0);
     return fake.map((grupo, index) => {
       const real = reais.get(grupo.numero)?.total || 0;
-      const oscilacao = ((Math.floor(agora / 3000) + index * 2) % 3) - 1;
-      return { ...grupo, total: Math.round(grupo.total * (1 - transicao) + real * transicao) + (transicao < 1 ? oscilacao : 0) };
+      // A base fictícia nunca ultrapassa o total real de cada chapa.
+      // Assim, a transição só aumenta os números até chegar ao resultado real.
+      const participacao = totalReal ? grupo.total / fake.reduce((total, item) => total + item.total, 0) : 0;
+      const base = Math.min(real, Math.floor(totalReal * participacao));
+      return { ...grupo, total: Math.min(real, Math.round(base + (real - base) * transicao)) };
     });
   }, [agora, delayMs, gruposReais, inicioSuspense, modoSuspense]);
   const progressoSuspense = modoSuspense && inicioSuspense ? Math.min(1, Math.max(0, (agora - inicioSuspense) / delayMs)) : 1;
