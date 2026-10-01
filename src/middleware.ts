@@ -7,14 +7,6 @@ export function middleware(request: NextRequest) {
   const cidade = partes[0];
   const tela = partes[1];
 
-  if ((cidade === 'jatai' || cidade === 'goiania') && tela === 'urna') {
-    const url = request.nextUrl.clone();
-    url.pathname = '/';
-    url.searchParams.set('cidade', cidade);
-    url.searchParams.set('direto', '1');
-    return NextResponse.rewrite(url);
-  }
-
   if ((cidade === 'jatai' || cidade === 'goiania') && tela && telas.has(tela)) {
     const url = request.nextUrl.clone();
     url.pathname = `/${tela}`;

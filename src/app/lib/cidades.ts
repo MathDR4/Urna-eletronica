@@ -11,7 +11,9 @@ export function cidadeValida(valor: string | null | undefined): CidadeSlug {
 
 export function cidadeAtual(): CidadeSlug {
   if (typeof window === 'undefined') return 'jatai';
-  const cidade = cidadeValida(new URLSearchParams(window.location.search).get('cidade'));
+  const parametro = new URLSearchParams(window.location.search).get('cidade');
+  const cidadeDoCaminho = window.location.pathname.startsWith('/goiania/') ? 'goiania' : window.location.pathname.startsWith('/jatai/') ? 'jatai' : null;
+  const cidade = cidadeValida(parametro || cidadeDoCaminho);
   localStorage.setItem('cidade-slug', cidade);
   return cidade;
 }
