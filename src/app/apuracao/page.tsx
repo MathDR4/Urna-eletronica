@@ -82,7 +82,7 @@ export default function ApuracaoPage() {
   };
 
   return (
-    <main style={{ maxWidth: 1000, margin: '32px auto', padding: 24, fontFamily: 'Arial, sans-serif', color: '#17202a' }}>
+    <main style={{ minHeight: '100vh', width: '100%', background: '#f8fafc', maxWidth: 'none', margin: 0, padding: 'clamp(24px, 4vw, 48px)', fontFamily: 'Arial, sans-serif', color: '#17202a' }}><div style={{ maxWidth: 1000, margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
         <div><h1 style={{ marginBottom: 6 }}>Apuração dos votos</h1><p style={{ marginTop: 0 }}>Dinâmica da igreja · urna-igreja</p></div>
         <button onClick={carregarVotos} style={{ padding: '10px 16px', cursor: 'pointer' }}>Atualizar</button>
@@ -99,6 +99,7 @@ export default function ApuracaoPage() {
         <div style={{ marginTop: 28, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}><h2>Extrato detalhado</h2><div style={{ display: 'flex', gap: 10 }}><button onClick={exportarCsv} style={{ padding: '10px 16px', cursor: 'pointer' }}>Exportar CSV</button><button onClick={zerarVotos} style={{ padding: '10px 16px', cursor: 'pointer', background: '#b42318', color: '#fff', border: 0, borderRadius: 4 }}>ZERAR VOTOS</button></div></div>
         <div style={{ overflowX: 'auto' }}><table style={{ width: '100%', borderCollapse: 'collapse' }}><thead><tr>{['Data e hora', 'Número', 'Nome', 'Chapa', 'Tipo'].map(titulo => <th key={titulo} style={{ textAlign: 'left', borderBottom: '2px solid #ddd', padding: 10 }}>{titulo}</th>)}</tr></thead><tbody>{votos.map(voto => <tr key={voto.id}>{[new Date(voto.data_hora).toLocaleString('pt-BR'), voto.numero || '-', voto.nome || '-', voto.chapa || '-', voto.tipo].map((valor, i) => <td key={i} style={{ borderBottom: '1px solid #eee', padding: 10 }}>{valor}</td>)}</tr>)}</tbody></table></div>
       </>}
+      </div>
     </main>
   );
 }
