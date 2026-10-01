@@ -249,7 +249,12 @@ const Home = () => {
                                 <InformacoesDireita>
                                     { candidato ? (
                                         <CardCandidato>
-                                            <EspacoFoto>FOTO</EspacoFoto>
+                                            {candidato.fotos[0]?.url ? (
+                                                <Imagem
+                                                    src={`/candidatos/igreja/${candidato.fotos[0].url}`}
+                                                    alt={candidato.fotos[0].legenda}
+                                                />
+                                            ) : <EspacoFoto>FOTO</EspacoFoto>}
                                             Chapa
                                         </CardCandidato>
                                     ) : null}
