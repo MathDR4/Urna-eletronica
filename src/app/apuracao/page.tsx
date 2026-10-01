@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/app/lib/supabase';
+import { cidadeAtual } from '@/app/lib/cidades';
 
 type Voto = {
   id: number;
@@ -24,7 +25,7 @@ export default function ApuracaoPage() {
       setCarregando(false);
       return;
     }
-    const consulta = supabase.from('votos').select('*').order('data_hora', { ascending: true });
+    const consulta = supabase.from('votos').select('*').eq('cidade_slug', cidadeAtual()).order('data_hora', { ascending: true });
     const resultado = await Promise.race([
       consulta,
       new Promise<{ data: null; error: { message: string } }>(resolve => window.setTimeout(() => resolve({ data: null, error: { message: 'O Supabase demorou para responder. Verifique a conexão e tente novamente.' } }), 10000)),
@@ -73,7 +74,7 @@ export default function ApuracaoPage() {
       return;
     }
     if (!supabase) return;
-    const { error } = await supabase.from('votos').delete().not('id', 'is', null);
+    const { error } = await supabase.from('votos').delete().eq('cidade_slug', cidadeAtual());
     if (error) window.alert(`Não foi possível zerar os votos: ${error.message}`);
     else {
       setVotos([]);

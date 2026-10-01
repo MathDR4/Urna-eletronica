@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/app/lib/supabase';
+import { cidadeAtual } from '@/app/lib/cidades';
 
 type Voto = { numero: number | null; nome: string; chapa: string; cor: string; tipo: string };
 type Grupo = { numero: number; nome: string; chapa: string; cor: string; total: number };
@@ -43,13 +44,13 @@ export default function GraficoPage() {
     const cliente = supabase;
     if (!cliente) return () => { if (relogio) window.clearInterval(relogio); };
     const carregar = async () => {
-      const { data } = await cliente.from('votos').select('numero,nome,chapa,cor,tipo');
+      const { data } = await cliente.from('votos').select('numero,nome,chapa,cor,tipo').eq('cidade_slug', cidadeAtual());
       setVotos(data || []);
       setAtualizadoEm(new Date());
     };
     carregar();
     const canal = cliente.channel('grafico-votos')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'votos' }, carregar)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'votos', filter: `cidade_slug=eq.${cidadeAtual()}` }, carregar)
       .subscribe();
     const intervalo = window.setInterval(carregar, 5000);
     return () => { cliente.removeChannel(canal); window.clearInterval(intervalo); if (relogio) window.clearInterval(relogio); };

@@ -23,6 +23,7 @@ import audioConfirmaUrna from '../../assets/sons/confirma-urna.mp3';
 import { Audio } from "@/app/components/Audio/Audio";
 import { dados as dadosEleicao} from "@/app/model/dados";
 import { supabase } from "@/app/lib/supabase";
+import { cidadeAtual } from "@/app/lib/cidades";
 
 const CHAVE_REGISTRO_VOTOS = 'urna-igreja-votos';
 
@@ -61,14 +62,15 @@ const Home = () => {
 
     useEffect(() => {
         try {
+            const cidade = cidadeAtual();
             if (!localStorage.getItem('estacao-id')) {
-                window.location.href = '/configurar-urna';
+                window.location.href = `/configurar-urna?cidade=${cidade}`;
                 return;
             }
             const sessao = JSON.parse(localStorage.getItem('urna-sessao') || 'null');
             if (!sessao?.id || sessao.status !== 'liberada') { localStorage.removeItem('urna-sessao'); return; }
             if (!supabase) { localStorage.removeItem('urna-sessao'); return; }
-            supabase.from('sessoes_votacao').select('*').eq('id', sessao.id).eq('status', 'liberada').maybeSingle().then(({ data }) => {
+            supabase.from('sessoes_votacao').select('*').eq('id', sessao.id).eq('cidade_slug', cidade).eq('status', 'liberada').maybeSingle().then(({ data }) => {
                 if (data) setSessaoLiberada(data);
                 else localStorage.removeItem('urna-sessao');
             });
@@ -144,7 +146,9 @@ const Home = () => {
         if (supabase) {
             const estacaoId = localStorage.getItem('estacao-id');
             const urnaConfigurada = localStorage.getItem('urna-configurada');
+            const cidade = cidadeAtual();
             const { error } = await supabase.from('votos').insert({
+                cidade_slug: cidade,
                 numero: registro.numero,
                 nome: registro.nome,
                 chapa: registro.chapa,
@@ -170,7 +174,7 @@ const Home = () => {
         setFinalizouVotacao(false);
         setVotoEmBranco(false);
         setVotoNulo(false);
-        window.setTimeout(() => { window.location.href = '/entrada'; }, 900);
+        window.setTimeout(() => { window.location.href = `/entrada?cidade=${cidadeAtual()}`; }, 900);
     };
 
     const proximoVoto = () => {
@@ -184,7 +188,7 @@ const Home = () => {
         setVicePrefeito(false);
     };
 
-    if (!sessaoLiberada) return <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: '#111827', color: '#fff', fontFamily: 'Arial, sans-serif', textAlign: 'center', padding: 24 }}><div><h1>Urna aguardando liberação</h1><p>Informe seu discipulado na tela de entrada e aguarde o mesário liberar uma urna.</p><a href="/entrada" style={{ color: '#93c5fd' }}>Ir para identificação</a></div></div>;
+    if (!sessaoLiberada) return <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: '#111827', color: '#fff', fontFamily: 'Arial, sans-serif', textAlign: 'center', padding: 24 }}><div><h1>Urna aguardando liberação</h1><p>Informe seu discipulado na tela de entrada e aguarde o mesário liberar uma urna.</p><a href={`/entrada?cidade=${typeof window === 'undefined' ? 'jatai' : cidadeAtual()}`} style={{ color: '#93c5fd' }}>Ir para identificação</a></div></div>;
 
     return (
         <>
