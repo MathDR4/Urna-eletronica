@@ -17,10 +17,12 @@ export default function GraficoPage() {
   const [agora, setAgora] = useState(Date.now());
   const [delayMs, setDelayMs] = useState(480000);
   const [versiculo, setVersiculo] = useState<string | null>(null);
+  const [modoFaixa, setModoFaixa] = useState(false);
 
   useEffect(() => {
     const parametros = new URLSearchParams(window.location.search);
     setVersiculo(parametros.get('versiculo') || null);
+    setModoFaixa(parametros.get('overlay') === '1');
     // O gráfico público sempre começa no modo de suspense. Use real=1 apenas
     // para inspeção técnica sem votos fictícios.
     const modoDemo = parametros.get('real') !== '1';
@@ -103,6 +105,8 @@ export default function GraficoPage() {
     { id: 7, nome: 'Amanda e Maria Laura', pontos: '600,320 680,210 850,145 900,300 760,410 500,420 380,270' },
   ];
   const coresMapa = ['#3b82f6', '#eab308', '#22c55e', '#eab308', '#22c55e', '#3b82f6', '#eab308'];
+
+  if (modoFaixa) return <main style={{ minHeight: '100vh', width: '100%', background: 'transparent', pointerEvents: 'none', fontFamily: 'Arial, sans-serif', color: '#fff' }}><div style={{ position: 'fixed', left: '3vw', right: '3vw', bottom: '3vh', padding: '18px 24px', borderRadius: 20, background: 'linear-gradient(135deg, #0c2b63f5, #164e9af5)', border: '2px solid #60a5fa', boxShadow: '0 8px 30px #0008', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>{grupos.map(grupo => { const percentual = Math.round((grupo.total / totalGrafico) * 100); const foto = fotoDaChapa(grupo.numero); return <div key={grupo.numero} style={{ display: 'grid', gridTemplateColumns: '62px 1fr', gap: 12, alignItems: 'center' }}>{foto && <img src={`/candidatos/igreja/${foto}`} alt="" style={{ width: 62, height: 62, borderRadius: '50%', objectFit: 'cover', border: `3px solid ${corDaChapa(grupo.cor)}` }} />}<div><div style={{ fontSize: 'clamp(16px, 1.5vw, 25px)', fontWeight: 800 }}>{grupo.numero} · {grupo.nome}</div><div style={{ color: '#dbeafe', fontSize: 'clamp(13px, 1.1vw, 19px)' }}>{grupo.chapa}</div><div style={{ height: 9, marginTop: 7, background: '#172554', borderRadius: 20, overflow: 'hidden' }}><div style={{ width: `${percentual}%`, height: '100%', background: corDaChapa(grupo.cor), borderRadius: 20 }} /></div></div><strong style={{ fontSize: 'clamp(24px, 2.6vw, 44px)', alignSelf: 'center' }}>{percentual}%</strong></div>; })}</div></main>;
 
   if (versiculo) return <main style={{ minHeight: '100vh', width: '100%', boxSizing: 'border-box', background: '#fff', color: '#111', padding: '6vh 7vw 4vh', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', fontFamily: 'Arial, sans-serif' }}><div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', fontSize: 'clamp(42px, 8vw, 116px)', fontWeight: 500, lineHeight: 1.12, padding: '2vh 4vw' }}>{versiculo}</div><div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '5vw', textAlign: 'center', fontSize: 'clamp(12px, 1.5vw, 22px)', fontWeight: 700 }}><span style={{ color: '#c28b00' }}>12 · Lauanny</span><span style={{ color: '#168a45' }}>17 · Manu</span><span style={{ color: '#2563c7' }}>67 · João Arthur</span></div></main>;
 
