@@ -24,7 +24,12 @@ export default function ApuracaoPage() {
       setCarregando(false);
       return;
     }
-    const { data, error } = await supabase.from('votos').select('*').order('data_hora', { ascending: true });
+    const consulta = supabase.from('votos').select('*').order('data_hora', { ascending: true });
+    const resultado = await Promise.race([
+      consulta,
+      new Promise<{ data: null; error: { message: string } }>(resolve => window.setTimeout(() => resolve({ data: null, error: { message: 'O Supabase demorou para responder. Verifique a conexão e tente novamente.' } }), 10000)),
+    ]);
+    const { data, error } = resultado;
     if (error) setErro(error.message);
     else setVotos(data || []);
     setCarregando(false);
@@ -44,7 +49,7 @@ export default function ApuracaoPage() {
       grupos.set(chave, atual);
     });
     return Array.from(grupos.values()).sort((a, b) => b.total - a.total);
-  }, [votos]);
+  }, [validos]);
 
   const exportarCsv = () => {
     const linhas = [['Data e hora', 'Número', 'Nome', 'Chapa', 'Cor', 'Tipo'], ...votos.map(voto => [
