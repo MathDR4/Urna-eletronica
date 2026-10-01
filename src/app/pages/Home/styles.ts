@@ -5,17 +5,18 @@ export const UrnaEletronica = styled.div(({ theme }) => (css`
     flex-direction: column;
     align-items: center;
     background-color: ${theme.colors.primary};
-    padding: 0 clamp(12px, 5vw, 60px);
-    border-radius: 6px;
-    border: 1px solid #A8A79D;
+    padding: clamp(18px, 3vw, 42px) clamp(12px, 4vw, 64px);
+    border-radius: 0;
+    border: 0;
     position: relative;
-    width: min(100%, 1180px);
+    width: 100%;
+    min-height: 100vh;
     margin: 0 auto;
 `));
 
 export const Tela = styled.div`
-    width: min(680px, 100%);
-    height: 320px;
+    width: min(900px, 100%);
+    height: clamp(340px, 46vh, 520px);
     display: flex;
     flex-direction: column;
 `;
@@ -173,9 +174,9 @@ export const Teclado = styled.div`
     display: flex;
     flex-direction: row;
     margin-left: 0;
-    width: min(410px, 100%);
-    margin-top: 40px;
-    margin-bottom: 40px;
+    width: min(560px, 100%);
+    margin-top: clamp(28px, 5vh, 56px);
+    margin-bottom: clamp(24px, 4vh, 44px);
 `;
 
 export const Linha = styled.div`
