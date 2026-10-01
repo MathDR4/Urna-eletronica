@@ -205,7 +205,6 @@ const Home = () => {
                                 <InformacoesEsquerda>
                                     <TituloVotacao>
                                         <span>SEU VOTO PARA</span>
-                                        <span>TREINAMENTO</span>
                                     </TituloVotacao>
                                     <CargoVotacao>
                                         <span>{ textoCargoVotacao }</span>
