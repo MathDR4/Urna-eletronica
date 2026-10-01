@@ -72,13 +72,19 @@ export default function GraficoPage() {
     const transicao = Math.min(1, Math.max(0, (progresso - 0.7) / 0.3));
     const reais = new Map(gruposReais.map(grupo => [grupo.numero, grupo]));
     const totalReal = gruposReais.reduce((total, grupo) => total + grupo.total, 0);
-    return fake.map((grupo, index) => {
+    const ciclo = Math.floor((agora - inicioSuspense) / 300000);
+    const pesosBase = [0.42, 0.33, 0.25];
+    const pesos = fake.map((_, index) => pesosBase[(index + ciclo) % pesosBase.length]);
+    const totalExibido = Math.min(totalReal, Math.max(totalReal >= 3 ? 3 : totalReal, Math.floor(totalReal * (0.25 + progresso * 0.75))));
+    const distribuicao = fake.map((grupo, index) => ({ ...grupo, total: totalReal >= 3 ? Math.max(1, Math.floor(totalExibido * pesos[index])) : 0 }));
+    let sobra = totalExibido - distribuicao.reduce((total, grupo) => total + grupo.total, 0);
+    for (let index = 0; sobra > 0; index = (index + 1) % distribuicao.length) {
+      distribuicao[index].total += 1;
+      sobra -= 1;
+    }
+    return distribuicao.map(grupo => {
       const real = reais.get(grupo.numero)?.total || 0;
-      // A base fictícia nunca ultrapassa o total real de cada chapa.
-      // Assim, a transição só aumenta os números até chegar ao resultado real.
-      const participacao = totalReal ? grupo.total / fake.reduce((total, item) => total + item.total, 0) : 0;
-      const base = Math.min(real, Math.floor(totalReal * participacao));
-      return { ...grupo, total: Math.min(real, Math.round(base + (real - base) * transicao)) };
+      return { ...grupo, total: transicao < 1 ? grupo.total : Math.max(0, Math.round(grupo.total * (1 - transicao) + real * transicao)) };
     });
   }, [agora, delayMs, gruposReais, inicioSuspense, modoSuspense]);
   const progressoSuspense = modoSuspense && inicioSuspense ? Math.min(1, Math.max(0, (agora - inicioSuspense) / delayMs)) : 1;
