@@ -16,9 +16,11 @@ export default function GraficoPage() {
   const [inicioSuspense, setInicioSuspense] = useState<number | null>(null);
   const [agora, setAgora] = useState(Date.now());
   const [delayMs, setDelayMs] = useState(480000);
+  const [versiculo, setVersiculo] = useState<string | null>(null);
 
   useEffect(() => {
     const parametros = new URLSearchParams(window.location.search);
+    setVersiculo(parametros.get('versiculo') || null);
     // O gráfico público sempre começa no modo de suspense. Use real=1 apenas
     // para inspeção técnica sem votos fictícios.
     const modoDemo = parametros.get('real') !== '1';
@@ -101,6 +103,8 @@ export default function GraficoPage() {
     { id: 7, nome: 'Amanda e Maria Laura', pontos: '600,320 680,210 850,145 900,300 760,410 500,420 380,270' },
   ];
   const coresMapa = ['#3b82f6', '#eab308', '#22c55e', '#eab308', '#22c55e', '#3b82f6', '#eab308'];
+
+  if (versiculo) return <main style={{ minHeight: '100vh', width: '100%', boxSizing: 'border-box', background: '#fff', color: '#111', padding: '6vh 7vw 4vh', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', fontFamily: 'Arial, sans-serif' }}><div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', fontSize: 'clamp(42px, 8vw, 116px)', fontWeight: 500, lineHeight: 1.12, padding: '2vh 4vw' }}>{versiculo}</div><div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '5vw', textAlign: 'center', fontSize: 'clamp(12px, 1.5vw, 22px)', fontWeight: 700 }}><span style={{ color: '#c28b00' }}>12 · Lauanny</span><span style={{ color: '#168a45' }}>17 · Manu</span><span style={{ color: '#2563c7' }}>67 · João Arthur</span></div></main>;
 
   return <main style={{ minHeight: '100vh', background: 'radial-gradient(circle at 50% 0%, #26345d 0%, #0b1020 55%, #050711 100%)', padding: '42px 6vw', fontFamily: 'Arial, sans-serif', color: '#fff', overflow: 'hidden' }}>
     <style>{`@keyframes subir { from { transform: translateY(80px) scale(.7); opacity: 0 } 15% { opacity: 1 } to { transform: translateY(-480px) scale(1.15); opacity: 0 } } @keyframes colorir { 0%,100% { fill-opacity: .45 } 50% { fill-opacity: .95 } } .bolha { position: absolute; bottom: 0; border-radius: 999px; animation: subir 5s linear infinite; }`}</style>
