@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/app/lib/supabase';
 import { cidadeAtual } from '@/app/lib/cidades';
 import MapaIgreja from './MapaIgreja';
+import { dados } from '@/app/model/dados';
+import { dadosGoiania } from '@/app/model/dadosGoiania';
 
 type Voto = { numero: number | null; nome: string; chapa: string; cor: string; tipo: string };
 type Grupo = { numero: number; nome: string; chapa: string; cor: string; total: number };
@@ -61,14 +63,16 @@ export default function GraficoPage() {
   const validos = votos.filter(voto => voto.tipo === 'válido');
   const gruposReais = useMemo(() => {
     const mapa = new Map<number, { numero: number; nome: string; chapa: string; cor: string; total: number }>();
+    const candidatos = (cidade === 'goiania' ? dadosGoiania : dados)[0].candidatos;
+    candidatos.forEach(candidato => mapa.set(candidato.numero, { numero: candidato.numero, nome: candidato.nome, chapa: candidato.partido, cor: candidato.cor, total: 0 }));
     validos.forEach(voto => {
       if (voto.numero === null) return;
       const atual = mapa.get(voto.numero) || { numero: voto.numero, nome: voto.nome, chapa: voto.chapa, cor: voto.cor, total: 0 };
       atual.total += 1;
       mapa.set(voto.numero, atual);
     });
-    return Array.from(mapa.values()).sort((a, b) => b.total - a.total);
-  }, [validos]);
+    return Array.from(mapa.values()).sort((a, b) => b.total - a.total || a.numero - b.numero);
+  }, [cidade, validos]);
   const grupos = useMemo(() => {
     if (!modoSuspense || !inicioSuspense) return gruposReais;
     const fake: Grupo[] = cidade === 'goiania' ? [
