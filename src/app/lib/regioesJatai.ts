@@ -19,10 +19,27 @@ export const regioesJatai: RegiaoJatai[] = [
 ];
 
 const grupoPorNome = new Map(gruposDiscipulado.map(grupo => [grupo.nome, grupo]));
+const regiaoPorFormacao = new Map(regioesJatai.map(regiao => [regiao.formacao, regiao.id]));
+const regiaoPorNome = new Map(regioesJatai.map(regiao => [regiao.nome, regiao.id]));
+const SUFIXO_FORMACAO = ' — Formação';
 
 export function obterRegiaoDoDiscipulado(discipulado: string | null | undefined): RegiaoJataiId | null {
   if (!discipulado) return null;
-  return grupoPorNome.get(discipulado)?.regiaoId ?? null;
+
+  const valor = discipulado.trim();
+
+  // O painel do mesário grava uma formação como, por exemplo,
+  // "Pr. Rafa e Dc. Pedro — Formação". Nesse caso o voto deve
+  // pontuar diretamente para a zona do discipulado maior.
+  const valorSemSufixo = valor.endsWith(SUFIXO_FORMACAO)
+    ? valor.slice(0, -SUFIXO_FORMACAO.length).trim()
+    : valor;
+
+  const regiaoDireta = regiaoPorFormacao.get(valorSemSufixo) ?? regiaoPorNome.get(valorSemSufixo);
+  if (regiaoDireta) return regiaoDireta;
+
+  // Para os discipulados menores, usa o vínculo explícito do cadastro.
+  return grupoPorNome.get(valor)?.regiaoId ?? grupoPorNome.get(valorSemSufixo)?.regiaoId ?? null;
 }
 
 export function corHexDaChapa(cor: string): string {
