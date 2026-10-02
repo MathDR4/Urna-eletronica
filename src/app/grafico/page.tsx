@@ -89,7 +89,7 @@ export default function GraficoPage() {
     const reais = new Map(gruposReais.map(grupo => [grupo.numero, grupo]));
     const totalReal = gruposReais.reduce((total, grupo) => total + grupo.total, 0);
     const ciclo = Math.floor((agora - inicioSuspense) / 300000);
-    const pesosBase = [0.7, 0.18, 0.12];
+    const pesosBase = [0.42, 0.33, 0.25];
     const pesos = progresso < 0.8
       ? fake.map((_, index) => pesosBase[(index + ciclo) % pesosBase.length])
       : fake.map(() => 1 / fake.length);
