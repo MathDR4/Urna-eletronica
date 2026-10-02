@@ -12,9 +12,15 @@ export default function ConfigurarUrnaPage() {
     const mesmaCidade = localStorage.getItem('estacao-cidade') === cidade;
     const codigo = mesmaCidade ? (localStorage.getItem('estacao-codigo') || `ESTACAO-${crypto.randomUUID().slice(0, 6).toUpperCase()}`) : `ESTACAO-${crypto.randomUUID().slice(0, 6).toUpperCase()}`;
     const idSalvo = mesmaCidade ? localStorage.getItem('estacao-id') : null;
-    const consulta = idSalvo
-      ? await supabase.from('estacoes_urna').update({ codigo, urna_numero: Number(urna), cidade_slug: cidade, ultimo_acesso: new Date().toISOString() }).eq('id', idSalvo).eq('cidade_slug', cidade).select('id').single()
-      : await supabase.from('estacoes_urna').insert({ codigo, urna_numero: Number(urna), cidade_slug: cidade }).select('id').single();
+    let idParaAtualizar = idSalvo;
+    if (!idParaAtualizar) {
+      const existente = await supabase.from('estacoes_urna').select('id').eq('cidade_slug', cidade).eq('urna_numero', Number(urna)).maybeSingle();
+      if (existente.error) { setMensagem(existente.error.message); return; }
+      idParaAtualizar = existente.data?.id || null;
+    }
+    const consulta = idParaAtualizar
+      ? await supabase.from('estacoes_urna').update({ codigo, urna_numero: Number(urna), cidade_slug: cidade, ativa: true, ultimo_acesso: new Date().toISOString() }).eq('id', idParaAtualizar).eq('cidade_slug', cidade).select('id').single()
+      : await supabase.from('estacoes_urna').insert({ codigo, urna_numero: Number(urna), cidade_slug: cidade, ativa: true }).select('id').single();
     if (consulta.error || !consulta.data) { setMensagem(consulta.error?.message || 'Não foi possível cadastrar. Talvez essa urna já esteja em uso.'); return; }
     localStorage.setItem('estacao-codigo', codigo); localStorage.setItem('estacao-id', consulta.data.id); localStorage.setItem('estacao-cidade', cidade); localStorage.setItem('urna-configurada', urna); localStorage.removeItem('urna-sessao'); window.location.href = `/entrada?cidade=${cidade}`;
   };
