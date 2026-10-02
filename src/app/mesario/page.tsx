@@ -18,7 +18,6 @@ export default function MesarioPage() {
   const [fila, setFila] = useState<any[]>([]);
   const [urna, setUrna] = useState("1");
   const [discipulado, setDiscipulado] = useState("");
-  const [formacao, setFormacao] = useState("");
   const [genero, setGenero] = useState<GeneroGrupo | "">("");
   const [mensagem, setMensagem] = useState("");
   const carregar = async () => {
@@ -51,8 +50,8 @@ export default function MesarioPage() {
   const grupoSelecionado = grupos.find((grupo) => grupo.id === discipulado);
   const gruposFiltrados = grupos.filter((grupo) => grupo.genero === genero);
   const liberarEleitor = async () => {
-    const destino = formacao
-      ? `FORMAÇÃO — ${formacao}`
+    const destino = discipulado.startsWith("formacao:")
+      ? `${discipulado.slice(9)} — Formação`
       : grupoSelecionado?.nome;
     if (!supabase || !destino) {
       setMensagem("Selecione uma formação ou um discipulado normal.");
@@ -86,7 +85,6 @@ export default function MesarioPage() {
       error ? error.message : `Urna ${urna} liberada para ${destino}.`,
     );
     setDiscipulado("");
-    setFormacao("");
     setGenero("");
   };
   return (
@@ -143,13 +141,6 @@ export default function MesarioPage() {
               NOVA LIBERAÇÃO
             </div>
             <div style={{ display: "grid", gap: 20 }}>
-              <label style={{ display: "grid", gap: 8, color: "#dbeafe", fontWeight: 700 }}>
-                Formação (mais velhos)
-                <select value={formacao} onChange={e => { setFormacao(e.target.value); setGenero(''); setDiscipulado(''); }} style={{ padding: 16, borderRadius: 12, border: "1px solid #52658f", background: "#0b1228", color: "#fff", fontSize: 16 }}>
-                  <option value="">Não é formação</option>
-                  {discipulados.map(nome => <option key={nome} value={nome}>FORMAÇÃO — {nome}</option>)}
-                </select>
-              </label>
               <label
                 style={{
                   display: "grid",
@@ -217,7 +208,6 @@ export default function MesarioPage() {
                 <select
                   value={discipulado}
                   onChange={(e) => setDiscipulado(e.target.value)}
-                  disabled={!genero}
                   style={{
                     padding: 16,
                     borderRadius: 12,
@@ -230,8 +220,13 @@ export default function MesarioPage() {
                   <option value="">
                     {genero
                       ? "Selecione o discipulado..."
-                      : "Escolha menino/menina primeiro"}
+                      : "Selecione uma formação ou escolha menino/menina"}
                   </option>
+                  {discipulados.map((nome) => (
+                    <option key={`formacao-${nome}`} value={`formacao:${nome}`}>
+                      {nome} — Formação
+                    </option>
+                  ))}
                   {gruposFiltrados.map((grupo) => (
                     <option key={grupo.id} value={grupo.id}>
                       {grupo.nome}
