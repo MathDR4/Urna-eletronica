@@ -261,7 +261,7 @@ const Home = () => {
                                         <CardCandidato>
                                             {candidato.fotos[0]?.url ? (
                                                 <Imagem
-                                                    src={`/candidatos/${cidade}/${candidato.fotos[0].url}`}
+                                                    src={cidade === 'goiania' ? `/candidatos/goiania/${candidato.fotos[0].url}` : `/candidatos/igreja/${candidato.fotos[0].url}`}
                                                     alt={candidato.fotos[0].legenda}
                                                 />
                                             ) : <EspacoFoto>FOTO</EspacoFoto>}
