@@ -22,6 +22,7 @@ import audioDigitoUrna from '../../assets/sons/digito-urna.mp3';
 import audioConfirmaUrna from '../../assets/sons/confirma-urna.mp3';
 import { Audio } from "@/app/components/Audio/Audio";
 import { dados as dadosEleicao} from "@/app/model/dados";
+import { dadosGoiania } from "@/app/model/dadosGoiania";
 import { supabase } from "@/app/lib/supabase";
 import { cidadeAtual } from "@/app/lib/cidades";
 
@@ -39,7 +40,8 @@ type RegistroVoto = {
 
 const Home = () => {
 
-    const dados: Etapa[] = dadosEleicao;
+    const cidade = typeof window !== 'undefined' && (window.location.pathname.startsWith('/goiania/') || new URLSearchParams(window.location.search).get('cidade') === 'goiania') ? 'goiania' : 'jatai';
+    const dados: Etapa[] = cidade === 'goiania' ? dadosGoiania : dadosEleicao;
     const [numeros, setNumeros] = useState<number[]>(Array(dados[0].numeros).fill(null));
     const [etapaVoto, setEtapaVoto] = useState(dados[0].etapa);
     const [candidato, setCandidato] = useState<Candidato | null>(null);
@@ -259,7 +261,7 @@ const Home = () => {
                                         <CardCandidato>
                                             {candidato.fotos[0]?.url ? (
                                                 <Imagem
-                                                    src={`/candidatos/igreja/${candidato.fotos[0].url}`}
+                                                    src={`/candidatos/${cidade}/${candidato.fotos[0].url}`}
                                                     alt={candidato.fotos[0].legenda}
                                                 />
                                             ) : <EspacoFoto>FOTO</EspacoFoto>}
