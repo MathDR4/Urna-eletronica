@@ -222,16 +222,18 @@ export default function MesarioPage() {
                       ? "Selecione o discipulado..."
                       : "Selecione uma formação ou escolha menino/menina"}
                   </option>
-                  {discipulados.map((nome) => (
-                    <option key={`formacao-${nome}`} value={`formacao:${nome}`}>
-                      {nome} — Formação
-                    </option>
-                  ))}
-                  {gruposFiltrados.map((grupo) => (
-                    <option key={grupo.id} value={grupo.id}>
-                      {grupo.nome}
-                    </option>
-                  ))}
+                  <optgroup label="Formações">
+                    {discipulados.map((nome) => (
+                      <option key={`formacao-${nome}`} value={`formacao:${nome}`}>
+                        {nome} — Formação
+                      </option>
+                    ))}
+                  </optgroup>
+                  {genero && <optgroup label={genero === "menino" ? "Discipulados masculinos" : "Discipulados femininos"}>
+                    {gruposFiltrados.map((grupo) => (
+                      <option key={grupo.id} value={grupo.id}>{grupo.nome}</option>
+                    ))}
+                  </optgroup>}
                 </select>
               </label>
               {grupoSelecionado && (
