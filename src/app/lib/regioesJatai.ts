@@ -1,6 +1,6 @@
-import { gruposDiscipulado } from '@/app/lib/gruposDiscipulado';
+import { gruposDiscipulado, RegiaoDiscipuladoId } from '@/app/lib/gruposDiscipulado';
 
-export type RegiaoJataiId = 1 | 2 | 3 | 4 | 5 | 6 | 7;
+export type RegiaoJataiId = RegiaoDiscipuladoId;
 
 export type RegiaoJatai = {
   id: RegiaoJataiId;
@@ -18,17 +18,11 @@ export const regioesJatai: RegiaoJatai[] = [
   { id: 7, nome: 'Amanda e Maria Laura', formacao: 'A. Borges e M. Laura' },
 ];
 
-const regiaoPorFormacao = new Map(regioesJatai.map(regiao => [regiao.formacao, regiao.id]));
 const grupoPorNome = new Map(gruposDiscipulado.map(grupo => [grupo.nome, grupo]));
 
 export function obterRegiaoDoDiscipulado(discipulado: string | null | undefined): RegiaoJataiId | null {
   if (!discipulado) return null;
-  const grupo = grupoPorNome.get(discipulado);
-  if (!grupo?.formacoes.length) return null;
-
-  // Alguns discipulados aparecem ligados a duas formações. Para que um voto
-  // pertença a uma única região, a formação principal é a primeira cadastrada.
-  return regiaoPorFormacao.get(grupo.formacoes[0]) ?? null;
+  return grupoPorNome.get(discipulado)?.regiaoId ?? null;
 }
 
 export function corHexDaChapa(cor: string): string {
