@@ -1,7 +1,7 @@
 "use client";
 
-import Home from '@/app/pages/Home/Home';
+import EntradaPage from '@/app/entrada/page';
 
 export default function EntradaGoianiaPage() {
-  return <Home />;
+  return <EntradaPage />;
 }

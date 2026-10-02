@@ -1,14 +1,11 @@
 "use client";
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/app/lib/supabase';
 import { cidadeAtual } from '@/app/lib/cidades';
 
 export default function ConfigurarUrnaPage() {
   const [urna, setUrna] = useState('1');
   const [mensagem, setMensagem] = useState('');
-  useEffect(() => {
-    if (cidadeAtual() === 'goiania') window.location.href = '/goiania/urna';
-  }, []);
   const salvar = async () => {
     if (!supabase) { setMensagem('Supabase não configurado.'); return; }
     const cidade = cidadeAtual();
