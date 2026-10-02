@@ -119,6 +119,16 @@ export default function GraficoPage() {
   ];
   const coresMapa = ['#3b82f6', '#eab308', '#22c55e', '#eab308', '#22c55e', '#3b82f6', '#eab308'];
   const coresMapaVencedoras = regioes.map((regiao, index) => {
+    if (modoSuspense && grupos.length) {
+      const ordenados = [...grupos].sort((a, b) => b.total - a.total);
+      const acumulado = ordenados.reduce((total, grupo) => total + grupo.total, 0);
+      let limite = 0;
+      for (const grupo of ordenados) {
+        limite += Math.max(1, Math.round((grupo.total / Math.max(acumulado, 1)) * regioes.length));
+        if (index < limite) return corDaChapa(grupo.cor);
+      }
+      return corDaChapa(ordenados[ordenados.length - 1].cor);
+    }
     const votosDaRegiao = validos.filter(voto => voto.discipulado === regiao.nome);
     const porChapa = new Map<string, { cor: string; total: number }>();
     votosDaRegiao.forEach(voto => { const atual = porChapa.get(String(voto.numero)) || { cor: voto.cor, total: 0 }; atual.total += 1; porChapa.set(String(voto.numero), atual); });
