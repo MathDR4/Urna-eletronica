@@ -7,7 +7,7 @@ import MapaIgreja from './MapaIgreja';
 import { dados } from '@/app/model/dados';
 import { dadosGoiania } from '@/app/model/dadosGoiania';
 
-type Voto = { numero: number | null; nome: string; chapa: string; cor: string; tipo: string };
+type Voto = { numero: number | null; nome: string; chapa: string; cor: string; tipo: string; discipulado: string | null };
 type Grupo = { numero: number; nome: string; chapa: string; cor: string; total: number };
 
 const corDaChapa = (cor: string) => ({ Amarelo: '#eab308', Verde: '#22c55e', Azul: '#3b82f6', '#d7ff00': '#d7ff00', '#7cff00': '#7cff00', '#18bfff': '#18bfff' }[cor] || '#64748b');
@@ -48,7 +48,7 @@ export default function GraficoPage() {
     const cliente = supabase;
     if (!cliente) return () => { if (relogio) window.clearInterval(relogio); };
     const carregar = async () => {
-      const { data } = await cliente.from('votos').select('numero,nome,chapa,cor,tipo').eq('cidade_slug', cidadeAtual());
+      const { data } = await cliente.from('votos').select('numero,nome,chapa,cor,tipo,discipulado').eq('cidade_slug', cidadeAtual());
       setVotos(data || []);
       setAtualizadoEm(new Date());
     };
@@ -118,6 +118,12 @@ export default function GraficoPage() {
     { id: 7, nome: 'Amanda e Maria Laura', pontos: '650,215 860,215 860,550 650,550' },
   ];
   const coresMapa = ['#3b82f6', '#eab308', '#22c55e', '#eab308', '#22c55e', '#3b82f6', '#eab308'];
+  const coresMapaVencedoras = regioes.map((regiao, index) => {
+    const votosDaRegiao = validos.filter(voto => voto.discipulado === regiao.nome);
+    const porChapa = new Map<string, { cor: string; total: number }>();
+    votosDaRegiao.forEach(voto => { const atual = porChapa.get(String(voto.numero)) || { cor: voto.cor, total: 0 }; atual.total += 1; porChapa.set(String(voto.numero), atual); });
+    return Array.from(porChapa.values()).sort((a, b) => b.total - a.total)[0]?.cor || '#334155';
+  });
 
   if (modoFaixa) return <main style={{ minHeight: '100vh', width: '100%', background: 'transparent', pointerEvents: 'none', fontFamily: 'Arial, sans-serif', color: '#fff' }}><div style={{ position: 'fixed', left: '3vw', right: '3vw', bottom: '3vh', padding: '18px 24px', borderRadius: 20, background: 'linear-gradient(135deg, #0c2b63f5, #164e9af5)', border: '2px solid #60a5fa', boxShadow: '0 8px 30px #0008', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>{grupos.map(grupo => { const percentual = Math.round((grupo.total / totalGrafico) * 100); const foto = fotoDaChapa(grupo.numero, cidade); return <div key={grupo.numero} style={{ display: 'grid', gridTemplateColumns: '62px 1fr', gap: 12, alignItems: 'center' }}>{foto && <img src={caminhoFoto(cidade, foto)} alt="" style={{ width: 62, height: 62, borderRadius: '50%', objectFit: 'cover', border: `3px solid ${corDaChapa(grupo.cor)}` }} />}<div><div style={{ fontSize: 'clamp(16px, 1.5vw, 25px)', fontWeight: 800 }}>{grupo.numero} · {grupo.nome}</div><div style={{ color: '#dbeafe', fontSize: 'clamp(13px, 1.1vw, 19px)' }}>{grupo.chapa}</div><div style={{ height: 9, marginTop: 7, background: '#172554', borderRadius: 20, overflow: 'hidden' }}><div style={{ width: `${percentual}%`, height: '100%', background: corDaChapa(grupo.cor), borderRadius: 20 }} /></div></div><strong style={{ fontSize: 'clamp(24px, 2.6vw, 44px)', alignSelf: 'center' }}>{percentual}%</strong></div>; })}</div></main>;
 
@@ -130,7 +136,7 @@ export default function GraficoPage() {
     <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 18, maxWidth: 760, marginBottom: 44 }}>
       {[['VOTOS VÁLIDOS', validosExibidos], ['BRANCOS', modoSuspense ? '—' : votos.filter(v => v.tipo === 'branco').length], ['NULOS', modoSuspense ? '—' : votos.filter(v => v.tipo === 'nulo').length]].map(([titulo, total]) => <div key={String(titulo)} style={{ padding: '22px 26px', border: '1px solid #33416e', background: '#131b35cc', borderRadius: 18 }}><div style={{ color: '#aab7e8', fontSize: 13, letterSpacing: 2 }}>{titulo}</div><strong style={{ display: 'block', fontSize: 52, marginTop: 5 }}>{total}</strong></div>)}
     </section>
-    <section style={{ marginBottom: 48 }}><h2 style={{ fontSize: 28, marginBottom: 18 }}>Planta da igreja · Jataí</h2><div style={{ maxWidth: 940, margin: '0 auto', background: '#10182f', border: '1px solid #33416e', borderRadius: 22, padding: 18 }}><MapaIgreja cores={coresMapa} /><div style={{ display: 'flex', justifyContent: 'center', gap: 24, flexWrap: 'wrap', color: '#c7d2fe', fontSize: 14 }}>{regioes.map((regiao, index) => <span key={regiao.id}><b style={{ color: coresMapa[index] }}>●</b> {regiao.id}. {regiao.nome}</span>)}</div></div></section>
+    <section style={{ marginBottom: 48 }}><h2 style={{ fontSize: 28, marginBottom: 18 }}>Planta da igreja · Jataí</h2><div style={{ maxWidth: 940, margin: '0 auto', background: '#10182f', border: '1px solid #33416e', borderRadius: 22, padding: 18 }}><MapaIgreja cores={coresMapaVencedoras} /><div style={{ display: 'flex', justifyContent: 'center', gap: 24, flexWrap: 'wrap', color: '#c7d2fe', fontSize: 14 }}>{regioes.map((regiao, index) => <span key={regiao.id}><b style={{ color: coresMapaVencedoras[index] }}>●</b> {regiao.id}. {regiao.nome}</span>)}</div></div></section>
     <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 42, alignItems: 'end' }}>
       <div><h2 style={{ fontSize: 28, marginBottom: 24 }}>Percentual por chapa</h2><div style={{ display: 'grid', gap: 24 }}>{grupos.map(grupo => { const percentual = Math.round((grupo.total / totalGrafico) * 100); const foto = fotoDaChapa(grupo.numero, cidade); return <div key={grupo.numero} style={{ display: 'grid', gridTemplateColumns: '76px 1fr', gap: 16, alignItems: 'center' }}>{foto ? <img src={caminhoFoto(cidade, foto)} alt={`Foto de ${grupo.nome}`} style={{ width: 76, height: 76, borderRadius: '50%', objectFit: 'cover', border: `3px solid ${corDaChapa(grupo.cor)}`, boxShadow: `0 0 18px ${corDaChapa(grupo.cor)}88` }} /> : <div /> }<div><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 9 }}><span style={{ fontSize: 20 }}><strong>{grupo.numero}</strong> · {grupo.nome} <small style={{ color: '#aab7e8' }}>({grupo.chapa})</small></span><strong style={{ fontSize: 26 }}>{percentual}%</strong></div><div style={{ height: 18, background: '#202a4b', borderRadius: 20, overflow: 'hidden' }}><div style={{ width: `${percentual}%`, height: '100%', background: corDaChapa(grupo.cor), borderRadius: 20, transition: 'width 1.2s' }} /></div></div></div>; })}</div>{grupos.length === 0 && <p style={{ color: '#aab7e8' }}>Aguardando os primeiros votos...</p>}</div>
       <div style={{ height: 430, position: 'relative', borderBottom: '2px solid #41517e', borderLeft: '1px solid #26345d', overflow: 'hidden' }}>{grupos.flatMap((grupo, grupoIndex) => Array.from({ length: Math.min(grupo.total, 28) }, (_, i) => { const foto = fotoDaChapa(grupo.numero, cidade); return foto ? <img key={`${grupo.numero}-${i}`} src={caminhoFoto(cidade, foto)} alt="" className="bolha" style={{ left: `${10 + ((i * 29 + grupoIndex * 17) % 80)}%`, width: 52 + ((i * 7) % 16), height: 52 + ((i * 7) % 16), objectFit: 'cover', border: `4px solid ${corDaChapa(grupo.cor)}`, boxShadow: `0 0 24px ${corDaChapa(grupo.cor)}`, animationDelay: `${-(i * .35)}s`, animationDuration: `${4.5 + (i % 3)}s` }} /> : null; }))}<div style={{ position: 'absolute', bottom: 14, width: '100%', textAlign: 'center', color: '#aab7e8', fontSize: 13 }}>VOTOS SUBINDO</div></div>

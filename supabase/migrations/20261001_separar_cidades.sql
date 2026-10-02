@@ -56,3 +56,4 @@ create unique index if not exists estacoes_urna_cidade_urna_uidx
   on public.estacoes_urna (cidade_slug, urna_numero);
 
 -- Não torne NOT NULL antes de classificar os dados antigos.
+alter table public.votos add column if not exists discipulado text;

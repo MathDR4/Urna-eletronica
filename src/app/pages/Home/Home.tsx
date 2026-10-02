@@ -156,6 +156,7 @@ const Home = () => {
                 chapa: registro.chapa,
                 cor: registro.cor,
                 tipo: registro.tipo,
+                discipulado: sessaoLiberada?.discipulado || null,
                 data_hora: registro.dataHora,
                 estacao_id: estacaoId || null,
                 urna_numero: urnaConfigurada ? Number(urnaConfigurada) : null,
