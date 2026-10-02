@@ -50,4 +50,9 @@ update public.votos set cidade_slug = 'jatai' where cidade_slug is null;
 update public.estacoes_urna set cidade_slug = 'jatai' where cidade_slug is null;
 update public.sessoes_votacao set cidade_slug = 'jatai' where cidade_slug is null;
 
+-- O número da urna pode existir nas duas cidades, mas não duplicado dentro da mesma cidade.
+alter table public.estacoes_urna drop constraint if exists estacoes_urna_urna_numero_key;
+create unique index if not exists estacoes_urna_cidade_urna_uidx
+  on public.estacoes_urna (cidade_slug, urna_numero);
+
 -- Não torne NOT NULL antes de classificar os dados antigos.
