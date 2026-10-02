@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/app/lib/supabase';
 import { cidadeAtual } from '@/app/lib/cidades';
+import type { ControleZona8 } from '@/app/lib/zona8';
 
 type Voto = {
   id: number;
@@ -18,6 +19,8 @@ export default function ApuracaoPage() {
   const [votos, setVotos] = useState<Voto[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
+  const [controleZona8, setControleZona8] = useState<ControleZona8 | null>(null);
+  const [processandoZona8, setProcessandoZona8] = useState(false);
 
   const carregarVotos = async () => {
     if (!supabase) {
@@ -36,7 +39,16 @@ export default function ApuracaoPage() {
     setCarregando(false);
   };
 
-  useEffect(() => { carregarVotos(); }, []);
+  const carregarZona8 = async () => {
+    if (!supabase || cidadeAtual() !== 'jatai') return;
+    const { data, error } = await supabase.from('controle_apuracao').select('*').eq('cidade_slug', 'jatai').maybeSingle();
+    if (!error && data) setControleZona8(data as ControleZona8);
+  };
+
+  useEffect(() => {
+    carregarVotos();
+    carregarZona8();
+  }, []);
 
   const validos = votos.filter(voto => voto.tipo === 'válido');
   const brancos = votos.filter(voto => voto.tipo === 'branco').length;
@@ -66,6 +78,37 @@ export default function ApuracaoPage() {
     URL.revokeObjectURL(url);
   };
 
+  const finalizarZona8 = async () => {
+    if (!supabase || processandoZona8) return;
+    if (!window.confirm('Revelar o resultado real?\n\nA Zona 8 será equalizada e deixará de alterar a diferença entre os candidatos.')) return;
+
+    setProcessandoZona8(true);
+    const { data, error } = await supabase.rpc('finalizar_zona8', { p_cidade: 'jatai' });
+    setProcessandoZona8(false);
+
+    if (error) {
+      window.alert(`Não foi possível finalizar a Zona 8: ${error.message}`);
+      return;
+    }
+
+    const linha = Array.isArray(data) ? data[0] : data;
+    if (linha) setControleZona8(linha as ControleZona8);
+  };
+
+  const resetarZona8 = async (pedirConfirmacao = true) => {
+    if (!supabase || cidadeAtual() !== 'jatai') return;
+    if (pedirConfirmacao && !window.confirm('Resetar a Zona 8 para um novo teste?')) return;
+
+    const { data, error } = await supabase.rpc('resetar_zona8', { p_cidade: 'jatai' });
+    if (error) {
+      window.alert(`Não foi possível resetar a Zona 8: ${error.message}`);
+      return;
+    }
+
+    const linha = Array.isArray(data) ? data[0] : data;
+    if (linha) setControleZona8(linha as ControleZona8);
+  };
+
   const zerarVotos = async () => {
     if (!window.confirm('Tem certeza que deseja apagar todos os votos?')) return;
     const confirmacao = window.prompt('Para confirmar, digite ZERAR:');
@@ -78,6 +121,7 @@ export default function ApuracaoPage() {
     if (error) window.alert(`Não foi possível zerar os votos: ${error.message}`);
     else {
       setVotos([]);
+      await resetarZona8(false);
       window.alert('Todos os votos foram zerados.');
     }
   };
@@ -86,13 +130,29 @@ export default function ApuracaoPage() {
     <main style={{ minHeight: '100vh', width: '100%', background: '#f8fafc', maxWidth: 'none', margin: 0, padding: 'clamp(24px, 4vw, 48px)', fontFamily: 'Arial, sans-serif', color: '#17202a' }}><div style={{ maxWidth: 1000, margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
         <div><h1 style={{ marginBottom: 6 }}>Apuração dos votos</h1><p style={{ marginTop: 0 }}>Dinâmica da igreja · urna-igreja</p></div>
-        <button onClick={carregarVotos} style={{ padding: '10px 16px', cursor: 'pointer' }}>Atualizar</button>
+        <button onClick={() => { carregarVotos(); carregarZona8(); }} style={{ padding: '10px 16px', cursor: 'pointer' }}>Atualizar</button>
       </div>
       {erro && <p style={{ color: '#b42318' }}>{erro}</p>}
       {carregando ? <p>Carregando votos...</p> : <>
         <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 12, margin: '24px 0' }}>
           {[['Total', votos.length], ['Válidos', validos.length], ['Brancos', brancos], ['Nulos', nulos]].map(([titulo, total]) => <div key={String(titulo)} style={{ padding: 18, borderRadius: 10, background: '#f1f5f9' }}><small>{titulo}</small><div style={{ fontSize: 30, fontWeight: 700 }}>{total}</div></div>)}
         </section>
+
+        {cidadeAtual() === 'jatai' && <section style={{ margin: '24px 0', padding: 20, borderRadius: 12, background: '#111827', color: '#fff' }}>
+          <h2 style={{ marginTop: 0 }}>Controle da Zona 8</h2>
+          <p style={{ color: '#cbd5e1' }}>A apuração acima e o CSV continuam mostrando somente votos reais.</p>
+          <p>Estado: <strong>{controleZona8?.zona8_status === 'finalizada' ? 'RESULTADO REAL LIBERADO' : 'DISPUTA CONTROLADA ATIVA'}</strong></p>
+          {controleZona8 && <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', marginBottom: 18 }}>
+            <span>Amarelo (12): <strong>{controleZona8.zona8_12}</strong></span>
+            <span>Verde (17): <strong>{controleZona8.zona8_17}</strong></span>
+            <span>Azul (67): <strong>{controleZona8.zona8_67}</strong></span>
+          </div>}
+          {controleZona8?.zona8_status === 'finalizada' ?
+            <button onClick={() => resetarZona8(true)} style={{ padding: '12px 18px', border: 0, borderRadius: 8, cursor: 'pointer', background: '#475569', color: '#fff', fontWeight: 800 }}>RESETAR ZONA 8</button> :
+            <button onClick={finalizarZona8} disabled={processandoZona8} style={{ padding: '14px 20px', border: 0, borderRadius: 8, cursor: 'pointer', background: '#dc2626', color: '#fff', fontWeight: 900, opacity: processandoZona8 ? .7 : 1 }}>{processandoZona8 ? 'PROCESSANDO...' : 'REVELAR RESULTADO REAL'}</button>
+          }
+        </section>}
+
         <h2>Resultado por chapa</h2>
         <div style={{ display: 'grid', gap: 12 }}>
           {apuracao.length === 0 ? <p>Nenhum voto válido registrado.</p> : apuracao.map(chapa => <div key={String(chapa.numero)} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: 16, border: '1px solid #ddd', borderRadius: 10 }}><span><strong>{chapa.numero} · {chapa.nome}</strong><br />{chapa.chapa} · {chapa.cor}</span><strong>{chapa.total} voto(s)</strong></div>)}
