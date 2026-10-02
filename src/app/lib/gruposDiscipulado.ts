@@ -5,7 +5,7 @@ export type GrupoDiscipulado = {
   id: string;
   nome: string;
   genero: GeneroGrupo;
-  regiaoId: RegiaoDiscipuladoId;
+  regiaoId?: RegiaoDiscipuladoId;
   formacoes: string[];
 };
 
