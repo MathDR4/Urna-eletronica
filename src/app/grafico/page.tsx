@@ -81,12 +81,14 @@ export default function GraficoPage() {
       { numero: 67, nome: 'João Arthur', chapa: 'Fortes e Intensos', cor: 'Azul', total: 13 },
     ];
     const progresso = Math.min(1, Math.max(0, (agora - inicioSuspense) / delayMs));
-    const transicao = Math.min(1, Math.max(0, (progresso - 0.7) / 0.3));
+    const transicao = Math.min(1, Math.max(0, (progresso - 0.8) / 0.2));
     const reais = new Map(gruposReais.map(grupo => [grupo.numero, grupo]));
     const totalReal = gruposReais.reduce((total, grupo) => total + grupo.total, 0);
     const ciclo = Math.floor((agora - inicioSuspense) / 300000);
-    const pesosBase = [0.42, 0.33, 0.25];
-    const pesos = fake.map((_, index) => pesosBase[(index + ciclo) % pesosBase.length]);
+    const pesosBase = [0.7, 0.18, 0.12];
+    const pesos = progresso < 0.8
+      ? fake.map((_, index) => pesosBase[(index + ciclo) % pesosBase.length])
+      : fake.map(() => 1 / fake.length);
     const totalExibido = Math.max(3, Math.floor(totalReal * (0.25 + progresso * 0.75)));
     const distribuicao = fake.map((grupo, index) => ({ ...grupo, total: Math.max(1, Math.floor(totalExibido * pesos[index])) }));
     let sobra = totalExibido - distribuicao.reduce((total, grupo) => total + grupo.total, 0);
