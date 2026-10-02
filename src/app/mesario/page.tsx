@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { discipulados } from "@/app/lib/discipulados";
 import { supabase } from "@/app/lib/supabase";
 import { gruposDiscipulado, GeneroGrupo } from "@/app/lib/gruposDiscipulado";
 import { gruposGoiania } from "@/app/lib/gruposGoiania";
@@ -49,6 +48,7 @@ export default function MesarioPage() {
   };
   const grupoSelecionado = grupos.find((grupo) => grupo.id === discipulado);
   const gruposFiltrados = grupos.filter((grupo) => grupo.genero === genero);
+  const formacoesFiltradas = Array.from(new Set(gruposFiltrados.flatMap((grupo) => grupo.formacoes))).sort();
   const liberarEleitor = async () => {
     const destino = discipulado.startsWith("formacao:")
       ? `${discipulado.slice(9)} — Formação`
@@ -223,7 +223,7 @@ export default function MesarioPage() {
                       : "Selecione uma formação ou escolha menino/menina"}
                   </option>
                   <optgroup label="Formações">
-                    {discipulados.map((nome) => (
+                    {formacoesFiltradas.map((nome) => (
                       <option key={`formacao-${nome}`} value={`formacao:${nome}`}>
                         {nome} — Formação
                       </option>
