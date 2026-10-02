@@ -6,9 +6,12 @@ import { cidadeAtual } from '@/app/lib/cidades';
 import MapaIgreja from './MapaIgreja';
 import { dados } from '@/app/model/dados';
 import { dadosGoiania } from '@/app/model/dadosGoiania';
+import { aplicarIntensidade, corHexDaChapa, obterRegiaoDoDiscipulado, regioesJatai } from '@/app/lib/regioesJatai';
+import { calcularZona8Exibida, ControleZona8, revelacaoZona8Concluida } from '@/app/lib/zona8';
 
 type Voto = { numero: number | null; nome: string; chapa: string; cor: string; tipo: string; discipulado: string | null };
 type Grupo = { numero: number; nome: string; chapa: string; cor: string; total: number };
+type ResultadoRegiao = { id: number; total: number; vencedorNumero: number | null; vencedorCor: string | null; vencedorVotos: number; segundoVotos: number; margem: number; corMapa: string };
 
 const corDaChapa = (cor: string) => ({ Amarelo: '#eab308', Verde: '#22c55e', Azul: '#3b82f6', '#d7ff00': '#d7ff00', '#7cff00': '#7cff00', '#18bfff': '#18bfff' }[cor] || '#64748b');
 const fotoDaChapa = (numero: number, cidade: string) => cidade === 'goiania' ? ({ 88: 'lucas-ganzerli.png', 75: 'samuel.png', 67: 'maria-eduarda.png' }[numero] || '') : ({ 12: 'lauanny.jpg', 17: 'manu.jpg', 67: 'joao-arthur.jpg' }[numero] || '');
@@ -24,12 +27,18 @@ export default function GraficoPage() {
   const [delayMs, setDelayMs] = useState(480000);
   const [versiculo, setVersiculo] = useState<string | null>(null);
   const [modoFaixa, setModoFaixa] = useState(false);
+  const [controleZona8, setControleZona8] = useState<ControleZona8 | null>(null);
+  const [agoraZona8, setAgoraZona8] = useState(Date.now());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setAgoraZona8(Date.now()), 500);
+    return () => window.clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     const parametros = new URLSearchParams(window.location.search);
     setVersiculo(parametros.get('versiculo') || null);
     setModoFaixa(parametros.get('overlay') === '1');
-    // A simulação só é ativada explicitamente; sem demo=1, a tela usa votos reais.
     const modoDemo = parametros.get('demo') === '1';
     setModoSuspense(modoDemo);
     let relogio: number | undefined;
@@ -41,17 +50,34 @@ export default function GraficoPage() {
       if (!salvo) window.sessionStorage.setItem(chave, String(inicio));
       setInicioSuspense(inicio);
       setDelayMs(minutos * 60 * 1000);
-      // O painel público avança em blocos de 5 minutos para não ficar
-      // alterando os números a cada segundo durante a apresentação.
       relogio = window.setInterval(() => setAgora(Date.now()), 300000);
     }
+
     const cliente = supabase;
     if (!cliente) return () => { if (relogio) window.clearInterval(relogio); };
+
     const carregar = async () => {
       const { data } = await cliente.from('votos').select('numero,nome,chapa,cor,tipo,discipulado').eq('cidade_slug', cidadeAtual());
-      setVotos(data || []);
+      const votosCarregados = (data || []) as Voto[];
+      setVotos(votosCarregados);
       setAtualizadoEm(new Date());
+
+      if (cidade === 'jatai' && !modoDemo) {
+        const validosAtuais = votosCarregados.filter(voto => voto.tipo === 'válido');
+        const contar = (numero: number) => validosAtuais.filter(voto => voto.numero === numero).length;
+        const { data: estado, error } = await cliente.rpc('avancar_zona8', {
+          p_cidade: 'jatai',
+          p_real_12: contar(12),
+          p_real_17: contar(17),
+          p_real_67: contar(67),
+        });
+        if (!error && estado) {
+          const linha = Array.isArray(estado) ? estado[0] : estado;
+          if (linha) setControleZona8(linha as ControleZona8);
+        }
+      }
     };
+
     carregar();
     const canal = cliente.channel('grafico-votos')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'votos', filter: `cidade_slug=eq.${cidadeAtual()}` }, carregar)
@@ -61,6 +87,7 @@ export default function GraficoPage() {
   }, []);
 
   const validos = votos.filter(voto => voto.tipo === 'válido');
+
   const gruposReais = useMemo(() => {
     const mapa = new Map<number, { numero: number; nome: string; chapa: string; cor: string; total: number }>();
     const candidatos = (cidade === 'goiania' ? dadosGoiania : dados)[0].candidatos;
@@ -73,6 +100,7 @@ export default function GraficoPage() {
     });
     return Array.from(mapa.values()).sort((a, b) => b.total - a.total || a.numero - b.numero);
   }, [cidade, validos]);
+
   const grupos = useMemo(() => {
     if (!modoSuspense || !inicioSuspense) return gruposReais;
     const fake: Grupo[] = cidade === 'goiania' ? [
@@ -90,9 +118,7 @@ export default function GraficoPage() {
     const totalReal = gruposReais.reduce((total, grupo) => total + grupo.total, 0);
     const ciclo = Math.floor((agora - inicioSuspense) / 300000);
     const pesosBase = [0.36, 0.33, 0.31];
-    const pesos = progresso < 0.8
-      ? fake.map((_, index) => pesosBase[(index + ciclo) % pesosBase.length])
-      : fake.map(() => 1 / fake.length);
+    const pesos = progresso < 0.8 ? fake.map((_, index) => pesosBase[(index + ciclo) % pesosBase.length]) : fake.map(() => 1 / fake.length);
     const totalExibido = Math.max(3, Math.floor(totalReal * (0.25 + progresso * 0.75)));
     const distribuicao = fake.map((grupo, index) => ({ ...grupo, total: Math.max(1, Math.floor(totalExibido * pesos[index])) }));
     let sobra = totalExibido - distribuicao.reduce((total, grupo) => total + grupo.total, 0);
@@ -105,37 +131,79 @@ export default function GraficoPage() {
       return { ...grupo, total: transicao >= 1 ? real : Math.max(1, Math.round(grupo.total * (1 - transicao) + real * transicao)) };
     });
   }, [agora, cidade, delayMs, gruposReais, inicioSuspense, modoSuspense]);
+
+  const resultadosRegioes = useMemo<ResultadoRegiao[]>(() => {
+    if (cidade !== 'jatai' || modoSuspense) return [];
+
+    return regioesJatai.map(regiao => {
+      const votosDaRegiao = validos.filter(voto => obterRegiaoDoDiscipulado(voto.discipulado) === regiao.id);
+      if (!votosDaRegiao.length) return { id: regiao.id, total: 0, vencedorNumero: null, vencedorCor: null, vencedorVotos: 0, segundoVotos: 0, margem: 0, corMapa: '#334155' };
+
+      const porChapa = new Map<number, { numero: number; cor: string; total: number }>();
+      votosDaRegiao.forEach(voto => {
+        if (voto.numero === null) return;
+        const atual = porChapa.get(voto.numero) || { numero: voto.numero, cor: voto.cor, total: 0 };
+        atual.total += 1;
+        porChapa.set(voto.numero, atual);
+      });
+
+      const ranking = Array.from(porChapa.values()).sort((a, b) => b.total - a.total);
+      const primeiro = ranking[0];
+      const segundo = ranking[1];
+      if (!primeiro) return { id: regiao.id, total: votosDaRegiao.length, vencedorNumero: null, vencedorCor: null, vencedorVotos: 0, segundoVotos: 0, margem: 0, corMapa: '#334155' };
+      if (segundo && primeiro.total === segundo.total) return { id: regiao.id, total: votosDaRegiao.length, vencedorNumero: null, vencedorCor: null, vencedorVotos: primeiro.total, segundoVotos: segundo.total, margem: 0, corMapa: '#64748b' };
+
+      const segundoTotal = segundo?.total || 0;
+      const margem = (primeiro.total - segundoTotal) / votosDaRegiao.length;
+      const intensidade = 0.28 + margem * 0.72;
+      return {
+        id: regiao.id,
+        total: votosDaRegiao.length,
+        vencedorNumero: primeiro.numero,
+        vencedorCor: primeiro.cor,
+        vencedorVotos: primeiro.total,
+        segundoVotos: segundoTotal,
+        margem,
+        corMapa: aplicarIntensidade(corHexDaChapa(primeiro.cor), intensidade),
+      };
+    });
+  }, [cidade, modoSuspense, validos]);
+
+  const votosZona8 = cidade === 'jatai' && !modoSuspense ? calcularZona8Exibida(controleZona8, agoraZona8) : { 12: 0, 17: 0, 67: 0 };
+
+  const gruposExibidos = useMemo(() => {
+    if (cidade !== 'jatai' || modoSuspense) return grupos;
+    return grupos.map(grupo => {
+      const ficticios = grupo.numero === 12 ? votosZona8[12] : grupo.numero === 17 ? votosZona8[17] : grupo.numero === 67 ? votosZona8[67] : 0;
+      return { ...grupo, total: grupo.total + ficticios };
+    });
+  }, [cidade, grupos, modoSuspense, votosZona8[12], votosZona8[17], votosZona8[67]]);
+
   const progressoSuspense = modoSuspense && inicioSuspense ? Math.min(1, Math.max(0, (agora - inicioSuspense) / delayMs)) : 1;
-  const validosExibidos = modoSuspense ? grupos.reduce((total, grupo) => total + grupo.total, 0) : validos.length;
-  const totalGrafico = Math.max(grupos.reduce((total, grupo) => total + grupo.total, 0), 1);
-  const regioes = [
-    { id: 1, nome: 'Pastor e Pedro', pontos: '70,45 275,45 275,170 70,170' },
-    { id: 2, nome: 'Júnio e Duarte', pontos: '275,45 500,45 500,170 275,170' },
-    { id: 3, nome: 'William e Felipe', pontos: '500,45 735,45 735,170 500,170' },
-    { id: 4, nome: 'Yasmin e Thalyta', pontos: '70,215 280,215 280,350 70,350' },
-    { id: 5, nome: 'Ester', pontos: '70,395 370,395 370,550 70,550' },
-    { id: 6, nome: 'Caroline e Sabrina', pontos: '400,215 610,215 610,390 400,390' },
-    { id: 7, nome: 'Amanda e Maria Laura', pontos: '650,215 860,215 860,550 650,550' },
-  ];
-  const coresMapa = ['#3b82f6', '#eab308', '#22c55e', '#eab308', '#22c55e', '#3b82f6', '#eab308'];
-  const coresMapaVencedoras = regioes.map((regiao, index) => {
-    if (modoSuspense && grupos.length) {
-      const ordenados = [...grupos].sort((a, b) => b.total - a.total);
-      const acumulado = ordenados.reduce((total, grupo) => total + grupo.total, 0);
-      let limite = 0;
-      for (const grupo of ordenados) {
-        limite += Math.max(1, Math.round((grupo.total / Math.max(acumulado, 1)) * regioes.length));
-        if (index < limite) return corDaChapa(grupo.cor);
-      }
-      return corDaChapa(ordenados[ordenados.length - 1].cor);
+  const validosExibidos = modoSuspense ? grupos.reduce((total, grupo) => total + grupo.total, 0) : gruposExibidos.reduce((total, grupo) => total + grupo.total, 0);
+  const totalGrafico = Math.max(gruposExibidos.reduce((total, grupo) => total + grupo.total, 0), 1);
+
+  const coresMapaDemo = regioesJatai.map((_, index) => {
+    const ordenados = [...grupos].sort((a, b) => b.total - a.total);
+    const acumulado = ordenados.reduce((total, grupo) => total + grupo.total, 0);
+    let limite = 0;
+    for (const grupo of ordenados) {
+      limite += Math.max(1, Math.round((grupo.total / Math.max(acumulado, 1)) * regioesJatai.length));
+      if (index < limite) return corDaChapa(grupo.cor);
     }
-    const votosDaRegiao = validos.filter(voto => voto.discipulado === regiao.nome);
-    const porChapa = new Map<string, { cor: string; total: number }>();
-    votosDaRegiao.forEach(voto => { const atual = porChapa.get(String(voto.numero)) || { cor: voto.cor, total: 0 }; atual.total += 1; porChapa.set(String(voto.numero), atual); });
-    return Array.from(porChapa.values()).sort((a, b) => b.total - a.total)[0]?.cor || '#334155';
+    return ordenados.length ? corDaChapa(ordenados[ordenados.length - 1].cor) : '#334155';
   });
 
-  if (modoFaixa) return <main style={{ minHeight: '100vh', width: '100%', background: 'transparent', pointerEvents: 'none', fontFamily: 'Arial, sans-serif', color: '#fff' }}><div style={{ position: 'fixed', left: '3vw', right: '3vw', bottom: '3vh', padding: '18px 24px', borderRadius: 20, background: 'linear-gradient(135deg, #0c2b63f5, #164e9af5)', border: '2px solid #60a5fa', boxShadow: '0 8px 30px #0008', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>{grupos.map(grupo => { const percentual = Math.round((grupo.total / totalGrafico) * 100); const foto = fotoDaChapa(grupo.numero, cidade); return <div key={grupo.numero} style={{ display: 'grid', gridTemplateColumns: '62px 1fr', gap: 12, alignItems: 'center' }}>{foto && <img src={caminhoFoto(cidade, foto)} alt="" style={{ width: 62, height: 62, borderRadius: '50%', objectFit: 'cover', border: `3px solid ${corDaChapa(grupo.cor)}` }} />}<div><div style={{ fontSize: 'clamp(16px, 1.5vw, 25px)', fontWeight: 800 }}>{grupo.numero} · {grupo.nome}</div><div style={{ color: '#dbeafe', fontSize: 'clamp(13px, 1.1vw, 19px)' }}>{grupo.chapa}</div><div style={{ height: 9, marginTop: 7, background: '#172554', borderRadius: 20, overflow: 'hidden' }}><div style={{ width: `${percentual}%`, height: '100%', background: corDaChapa(grupo.cor), borderRadius: 20 }} /></div></div><strong style={{ fontSize: 'clamp(24px, 2.6vw, 44px)', alignSelf: 'center' }}>{percentual}%</strong></div>; })}</div></main>;
+  const coresMapaVencedoras = modoSuspense ? coresMapaDemo : resultadosRegioes.map(regiao => regiao.corMapa);
+  const zona8Ordenada = cidade === 'jatai' ? [
+    { numero: 12, cor: 'Amarelo', total: votosZona8[12] },
+    { numero: 17, cor: 'Verde', total: votosZona8[17] },
+    { numero: 67, cor: 'Azul', total: votosZona8[67] },
+  ].sort((a, b) => b.total - a.total) : [];
+  const zona8Empatada = zona8Ordenada.length > 1 && zona8Ordenada[0].total === zona8Ordenada[1].total;
+  const corZona8 = zona8Empatada || !zona8Ordenada.length ? '#64748b' : corDaChapa(zona8Ordenada[0].cor);
+
+  if (modoFaixa) return <main style={{ minHeight: '100vh', width: '100%', background: 'transparent', pointerEvents: 'none', fontFamily: 'Arial, sans-serif', color: '#fff' }}><div style={{ position: 'fixed', left: '3vw', right: '3vw', bottom: '3vh', padding: '18px 24px', borderRadius: 20, background: 'linear-gradient(135deg, #0c2b63f5, #164e9af5)', border: '2px solid #60a5fa', boxShadow: '0 8px 30px #0008', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>{gruposExibidos.map(grupo => { const percentual = Math.round((grupo.total / totalGrafico) * 100); const foto = fotoDaChapa(grupo.numero, cidade); return <div key={grupo.numero} style={{ display: 'grid', gridTemplateColumns: '62px 1fr', gap: 12, alignItems: 'center' }}>{foto && <img src={caminhoFoto(cidade, foto)} alt="" style={{ width: 62, height: 62, borderRadius: '50%', objectFit: 'cover', border: `3px solid ${corDaChapa(grupo.cor)}` }} />}<div><div style={{ fontSize: 'clamp(16px, 1.5vw, 25px)', fontWeight: 800 }}>{grupo.numero} · {grupo.nome}</div><div style={{ color: '#dbeafe', fontSize: 'clamp(13px, 1.1vw, 19px)' }}>{grupo.chapa}</div><div style={{ height: 9, marginTop: 7, background: '#172554', borderRadius: 20, overflow: 'hidden' }}><div style={{ width: `${percentual}%`, height: '100%', background: corDaChapa(grupo.cor), borderRadius: 20 }} /></div></div><strong style={{ fontSize: 'clamp(24px, 2.6vw, 44px)', alignSelf: 'center' }}>{percentual}%</strong></div>; })}</div></main>;
 
   if (versiculo) return <main style={{ minHeight: '100vh', width: '100%', boxSizing: 'border-box', background: '#fff', color: '#111', padding: '6vh 7vw 4vh', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', fontFamily: 'Arial, sans-serif' }}><div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', fontSize: 'clamp(42px, 8vw, 116px)', fontWeight: 500, lineHeight: 1.12, padding: '2vh 4vw' }}>{versiculo}</div><div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '5vw', textAlign: 'center', fontSize: 'clamp(12px, 1.5vw, 22px)', fontWeight: 700 }}><span style={{ color: '#c28b00' }}>12 · Lauanny</span><span style={{ color: '#168a45' }}>17 · Manu</span><span style={{ color: '#2563c7' }}>67 · João Arthur</span></div></main>;
 
@@ -146,18 +214,11 @@ export default function GraficoPage() {
     <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 18, maxWidth: 760, marginBottom: 44 }}>
       {[['VOTOS VÁLIDOS', validosExibidos], ['BRANCOS', modoSuspense ? '—' : votos.filter(v => v.tipo === 'branco').length], ['NULOS', modoSuspense ? '—' : votos.filter(v => v.tipo === 'nulo').length]].map(([titulo, total]) => <div key={String(titulo)} style={{ padding: '22px 26px', border: '1px solid #33416e', background: '#131b35cc', borderRadius: 18 }}><div style={{ color: '#aab7e8', fontSize: 13, letterSpacing: 2 }}>{titulo}</div><strong style={{ display: 'block', fontSize: 52, marginTop: 5 }}>{total}</strong></div>)}
     </section>
-    <section style={{ marginBottom: 48 }}><h2 style={{ fontSize: 28, marginBottom: 18 }}>Planta da igreja · Jataí</h2><div style={{ maxWidth: 940, margin: '0 auto', background: '#10182f', border: '1px solid #33416e', borderRadius: 22, padding: 18 }}><MapaIgreja cores={coresMapaVencedoras} /><div style={{ display: 'flex', justifyContent: 'center', gap: 24, flexWrap: 'wrap', color: '#c7d2fe', fontSize: 14 }}>{regioes.map((regiao, index) => <span key={regiao.id}><b style={{ color: coresMapaVencedoras[index] }}>●</b> {regiao.id}. {regiao.nome}</span>)}</div></div></section>
+    <section style={{ marginBottom: 48 }}><h2 style={{ fontSize: 28, marginBottom: 18 }}>Planta da igreja · Jataí</h2><div style={{ maxWidth: 940, margin: '0 auto', background: '#10182f', border: '1px solid #33416e', borderRadius: 22, padding: 18 }}><MapaIgreja cores={coresMapaVencedoras.length ? coresMapaVencedoras : Array(7).fill('#334155')} /><div style={{ display: 'flex', justifyContent: 'center', gap: 24, flexWrap: 'wrap', color: '#c7d2fe', fontSize: 14 }}>{regioesJatai.map((regiao, index) => { const resultado = resultadosRegioes[index]; return <span key={regiao.id} title={resultado ? `${resultado.total} votos · margem ${Math.round(resultado.margem * 100)}%` : undefined}><b style={{ color: coresMapaVencedoras[index] || '#334155' }}>●</b> {regiao.id}. {regiao.nome}</span>; })}</div>{cidade === 'jatai' && !modoSuspense && <div style={{ marginTop: 18, padding: 16, borderRadius: 14, border: `2px solid ${corZona8}`, background: '#0b1228', transition: 'border-color 1s' }}><div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}><strong>8. Zona 8</strong><span style={{ color: controleZona8?.zona8_status === 'finalizada' ? (revelacaoZona8Concluida(controleZona8, agoraZona8) ? '#86efac' : '#facc15') : '#93c5fd', fontSize: 13, fontWeight: 800 }}>{controleZona8?.zona8_status === 'finalizada' ? (revelacaoZona8Concluida(controleZona8, agoraZona8) ? '● APURAÇÃO CONCLUÍDA' : '● FECHANDO') : '● EM APURAÇÃO'}</span></div><div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: 10, marginTop: 12 }}>{[{ numero: 12, cor: 'Amarelo', total: votosZona8[12] }, { numero: 17, cor: 'Verde', total: votosZona8[17] }, { numero: 67, cor: 'Azul', total: votosZona8[67] }].map(item => <div key={item.numero} style={{ padding: 10, borderRadius: 10, textAlign: 'center', background: '#111827', border: `1px solid ${corDaChapa(item.cor)}` }}><strong style={{ color: corDaChapa(item.cor) }}>{item.numero}</strong><div style={{ fontSize: 24, fontWeight: 900, marginTop: 2 }}>{item.total}</div></div>)}</div></div>}</div></section>
     <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 42, alignItems: 'end' }}>
-      <div><h2 style={{ fontSize: 28, marginBottom: 24 }}>Percentual por chapa</h2><div style={{ display: 'grid', gap: 24 }}>{grupos.map(grupo => { const percentual = Math.round((grupo.total / totalGrafico) * 100); const foto = fotoDaChapa(grupo.numero, cidade); return <div key={grupo.numero} style={{ display: 'grid', gridTemplateColumns: '76px 1fr', gap: 16, alignItems: 'center' }}>{foto ? <img src={caminhoFoto(cidade, foto)} alt={`Foto de ${grupo.nome}`} style={{ width: 76, height: 76, borderRadius: '50%', objectFit: 'cover', border: `3px solid ${corDaChapa(grupo.cor)}`, boxShadow: `0 0 18px ${corDaChapa(grupo.cor)}88` }} /> : <div /> }<div><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 9 }}><span style={{ fontSize: 20 }}><strong>{grupo.numero}</strong> · {grupo.nome} <small style={{ color: '#aab7e8' }}>({grupo.chapa})</small></span><strong style={{ fontSize: 26 }}>{percentual}%</strong></div><div style={{ height: 18, background: '#202a4b', borderRadius: 20, overflow: 'hidden' }}><div style={{ width: `${percentual}%`, height: '100%', background: corDaChapa(grupo.cor), borderRadius: 20, transition: 'width 1.2s' }} /></div></div></div>; })}</div>{grupos.length === 0 && <p style={{ color: '#aab7e8' }}>Aguardando os primeiros votos...</p>}</div>
-      <div style={{ height: 430, position: 'relative', borderBottom: '2px solid #41517e', borderLeft: '1px solid #26345d', overflow: 'hidden' }}>{grupos.flatMap((grupo, grupoIndex) => Array.from({ length: Math.min(grupo.total, 28) }, (_, i) => { const foto = fotoDaChapa(grupo.numero, cidade); return foto ? <img key={`${grupo.numero}-${i}`} src={caminhoFoto(cidade, foto)} alt="" className="bolha" style={{ left: `${10 + ((i * 29 + grupoIndex * 17) % 80)}%`, width: 52 + ((i * 7) % 16), height: 52 + ((i * 7) % 16), objectFit: 'cover', border: `4px solid ${corDaChapa(grupo.cor)}`, boxShadow: `0 0 24px ${corDaChapa(grupo.cor)}`, animationDelay: `${-(i * .35)}s`, animationDuration: `${4.5 + (i % 3)}s` }} /> : null; }))}<div style={{ position: 'absolute', bottom: 14, width: '100%', textAlign: 'center', color: '#aab7e8', fontSize: 13 }}>VOTOS SUBINDO</div></div>
+      <div><h2 style={{ fontSize: 28, marginBottom: 24 }}>Percentual por chapa</h2><div style={{ display: 'grid', gap: 24 }}>{gruposExibidos.map(grupo => { const percentual = Math.round((grupo.total / totalGrafico) * 100); const foto = fotoDaChapa(grupo.numero, cidade); return <div key={grupo.numero} style={{ display: 'grid', gridTemplateColumns: '76px 1fr', gap: 16, alignItems: 'center' }}>{foto ? <img src={caminhoFoto(cidade, foto)} alt={`Foto de ${grupo.nome}`} style={{ width: 76, height: 76, borderRadius: '50%', objectFit: 'cover', border: `3px solid ${corDaChapa(grupo.cor)}`, boxShadow: `0 0 18px ${corDaChapa(grupo.cor)}88` }} /> : <div /> }<div><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 9 }}><span style={{ fontSize: 20 }}><strong>{grupo.numero}</strong> · {grupo.nome} <small style={{ color: '#aab7e8' }}>({grupo.chapa})</small></span><strong style={{ fontSize: 26 }}>{percentual}%</strong></div><div style={{ height: 18, background: '#202a4b', borderRadius: 20, overflow: 'hidden' }}><div style={{ width: `${percentual}%`, height: '100%', background: corDaChapa(grupo.cor), borderRadius: 20, transition: 'width 1.2s' }} /></div></div></div>; })}</div>{gruposExibidos.length === 0 && <p style={{ color: '#aab7e8' }}>Aguardando os primeiros votos...</p>}</div>
+      <div style={{ height: 430, position: 'relative', borderBottom: '2px solid #41517e', borderLeft: '1px solid #26345d', overflow: 'hidden' }}>{gruposExibidos.flatMap((grupo, grupoIndex) => Array.from({ length: Math.min(grupo.total, 28) }, (_, i) => { const foto = fotoDaChapa(grupo.numero, cidade); return foto ? <img key={`${grupo.numero}-${i}`} src={caminhoFoto(cidade, foto)} alt="" className="bolha" style={{ left: `${10 + ((i * 29 + grupoIndex * 17) % 80)}%`, width: 52 + ((i * 7) % 16), height: 52 + ((i * 7) % 16), objectFit: 'cover', border: `4px solid ${corDaChapa(grupo.cor)}`, boxShadow: `0 0 24px ${corDaChapa(grupo.cor)}`, animationDelay: `${-(i * .35)}s`, animationDuration: `${4.5 + (i % 3)}s` }} /> : null; }))}<div style={{ position: 'absolute', bottom: 14, width: '100%', textAlign: 'center', color: '#aab7e8', fontSize: 13 }}>VOTOS SUBINDO</div></div>
     </section>
     <style>{`@media (min-width: 901px) { main { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(300px, .85fr); grid-template-rows: auto auto auto auto; gap: 24px 36px; align-items: start; } main > header, main > section:first-of-type, main > p { grid-column: 1 / -1; } main > header { grid-row: 1; } main > section:first-of-type { grid-row: 2; } main > section:nth-of-type(2) { grid-column: 1; grid-row: 3; margin-bottom: 0 !important; } main > section:nth-of-type(3) { display: contents !important; } main > section:nth-of-type(3) > div:first-child { grid-column: 1 / -1; grid-row: 4; } main > section:nth-of-type(3) > div:first-child > div { display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; } main > section:nth-of-type(3) > div:nth-child(2) { grid-column: 2; grid-row: 3; width: 100%; height: 530px !important; margin-top: 50px; } main > p { grid-row: 5; } } @media (max-width: 900px) { main { display: block !important; } }`}</style><p style={{ color: '#7180ad', fontSize: 13, marginTop: 40 }}>Última atualização: {atualizadoEm.toLocaleTimeString('pt-BR')} · painel local</p>
   </main>;
 }
-
-
-
-
-
-
-

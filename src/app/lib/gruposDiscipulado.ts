@@ -1,38 +1,82 @@
 export type GeneroGrupo = 'menino' | 'menina';
-export type GrupoDiscipulado = { id: string; nome: string; genero: GeneroGrupo; formacoes: string[] };
+export type RegiaoDiscipuladoId = 1 | 2 | 3 | 4 | 5 | 6 | 7;
+
+export type GrupoDiscipulado = {
+  id: string;
+  nome: string;
+  genero: GeneroGrupo;
+  regiaoId: RegiaoDiscipuladoId;
+  formacoes: string[];
+};
+
+const formacaoPorRegiao: Record<RegiaoDiscipuladoId, string> = {
+  1: 'Pr. Rafa e Dc. Pedro',
+  2: 'Dc. Junio e Dc. Matheus',
+  3: 'Dc. Felipe e Dc. Willian',
+  4: 'Dc. Y. Moraes e Dc. Thalyta',
+  5: 'Dc. Ester',
+  6: 'Dc. Carole e Dc. Sabrina',
+  7: 'A. Borges e M. Laura',
+};
+
+const grupo = (
+  id: string,
+  nome: string,
+  genero: GeneroGrupo,
+  regiaoId: RegiaoDiscipuladoId,
+): GrupoDiscipulado => ({
+  id,
+  nome,
+  genero,
+  regiaoId,
+  formacoes: [formacaoPorRegiao[regiaoId]],
+});
 
 export const gruposDiscipulado: GrupoDiscipulado[] = [
-  { id: 'alaor', nome: 'Alaor', genero: 'menino', formacoes: ['Pr. Rafa e Dc. Pedro'] },
-  { id: 'felipe-garcia', nome: 'Dc. Felipe Garcia', genero: 'menino', formacoes: ['Pr. Rafa e Dc. Pedro'] },
-  { id: 'willian', nome: 'Dc. Willian', genero: 'menino', formacoes: ['Pr. Rafa e Dc. Pedro'] },
-  { id: 'g-ferreira', nome: 'G. Ferreira', genero: 'menino', formacoes: ['Pr. Rafa e Dc. Pedro'] },
-  { id: 'jander', nome: 'Jander', genero: 'menino', formacoes: ['Pr. Rafa e Dc. Pedro'] },
-  { id: 'm-melo', nome: 'M. Melo', genero: 'menino', formacoes: ['Pr. Rafa e Dc. Pedro'] },
-  { id: 'samuel-jesus', nome: 'Samuel de Jesus', genero: 'menino', formacoes: ['Pr. Rafa e Dc. Pedro'] },
-  { id: 'tarik', nome: 'Tarik', genero: 'menino', formacoes: ['Pr. Rafa e Dc. Pedro'] },
-  { id: 'pedro-gustavo', nome: 'Dc. Pedro + Gustavo', genero: 'menino', formacoes: ['Dc. Junio e Dc. Matheus', 'Pr. Rafa e Dc. Pedro'] },
-  { id: 'william-andre', nome: 'William + André', genero: 'menino', formacoes: ['Dc. Felipe e Dc. Willian'] },
-  { id: 'felipe-jose-flavio', nome: 'Felipe + José Flávio', genero: 'menino', formacoes: ['Dc. Felipe e Dc. Willian'] },
-  { id: 'danth-carlos', nome: 'Danthe + Carlos', genero: 'menino', formacoes: ['Dc. Junio e Dc. Matheus'] },
-  { id: 'matheus-g-palacio', nome: 'Matheus + G. Palácio', genero: 'menino', formacoes: ['Dc. Junio e Dc. Matheus'] },
-  { id: 'ester-tamires', nome: 'Ester Rodrigues + Tamires', genero: 'menina', formacoes: ['Dc. Ester'] },
-  { id: 'fernanda-manu', nome: 'Fernanda + Manu', genero: 'menina', formacoes: ['A. Borges e M. Laura'] },
-  { id: 'emily-m-eugenia', nome: 'Mª Eugênia + Emily', genero: 'menina', formacoes: ['A. Borges e M. Laura'] },
-  { id: 'sabrina-sophia', nome: 'Sabrina + Sophia Motta', genero: 'menina', formacoes: ['Dc. Carole e Dc. Sabrina'] },
-  { id: 'amanda-brenda', nome: 'Amanda Gonçalo + Brenda', genero: 'menina', formacoes: ['A. Borges e M. Laura', 'Dc. Ester'] },
-  { id: 'bianca-debora', nome: 'Bianca + Débora', genero: 'menina', formacoes: ['Dc. Y. Moraes e Dc. Thalyta', 'Dc. Carole e Dc. Sabrina'] },
-  { id: 'lia-taisa', nome: 'Lia + Taísa', genero: 'menina', formacoes: ['Dc. Carole e Dc. Sabrina'] },
-  { id: 'thais-gaminha', nome: 'Thaís + Gaminha', genero: 'menina', formacoes: ['Dc. Y. Moraes e Dc. Thalyta'] },
-  { id: 'jessica-paula', nome: 'Jéssica + Paula', genero: 'menina', formacoes: ['Dc. Y. Moraes e Dc. Thalyta'] },
-  { id: 'vitoria-lorrana', nome: 'Vitória Ferreira + Lorrana', genero: 'menina', formacoes: ['Dc. Carole e Dc. Sabrina'] },
-  { id: 'gama-sara', nome: 'Gama + Sara Franco', genero: 'menina', formacoes: ['A. Borges e M. Laura'] },
-  { id: 'anna-ester', nome: 'Anna Lia + Ester Machado', genero: 'menina', formacoes: ['Dc. Ester'] },
-  { id: 'roberta-diuliana', nome: 'Roberta + Diuliana', genero: 'menina', formacoes: ['Dc. Y. Moraes e Dc. Thalyta'] },
-  { id: 'phublyane-anna', nome: 'Phublyane + Anna Gabriella', genero: 'menina', formacoes: ['A. Borges e M. Laura'] },
-  { id: 'ana-clara-vitoria', nome: 'Ana Clara + V. Lima', genero: 'menina', formacoes: ['Dc. Carole e Dc. Sabrina'] },
-  { id: 'yasmin-luana', nome: 'Yasmin Bastos + Luana', genero: 'menina', formacoes: ['Dc. Y. Moraes e Dc. Thalyta'] },
-  { id: 'isadora-mag', nome: 'Isadora + L. Magalhães', genero: 'menina', formacoes: ['Dc. Y. Moraes e Dc. Thalyta'] },
-  { id: 'maria-laura-elisa', nome: 'Maria Laura + Elisa', genero: 'menina', formacoes: ['A. Borges e M. Laura', 'Dc. Ester'] },
-  { id: 'thalyta', nome: 'Thályta', genero: 'menina', formacoes: ['Dc. Y. Moraes e Dc. Thalyta'] },
-  { id: 'y-moraes-beatriz', nome: 'Y. Moraes + Beatriz', genero: 'menina', formacoes: ['Dc. Y. Moraes e Dc. Thalyta'] },
+  // Zona 1 — Pastor e Pedro
+  grupo('felipe-garcia-jose-flavio', 'Dc. Felipe Garcia e José Flávio', 'menino', 1),
+  grupo('william-andre', 'Dc. William e André', 'menino', 1),
+  grupo('matheus-duarte-jander', 'Dc. Matheus Duarte e Jander', 'menino', 1),
+  grupo('matheus-melo-lucas-reis', 'Matheus Melo e Lucas Reis', 'menino', 1),
+  grupo('tarik', 'Tárik', 'menino', 1),
+
+  // Zona 2 — Júnio e Duarte
+  grupo('daniel-kalebe-guilherme', 'Daniel Kalebe e Guilherme', 'menino', 2),
+  grupo('danthe-carlos', 'Dc. Danthe e Carlos', 'menino', 2),
+  grupo('wallace-alaor', 'Wallace e Alaor', 'menino', 2),
+  grupo('gabriel-souza-marcos-vaz', 'Gabriel Souza e Marcos Vaz', 'menino', 2),
+  grupo('gabriel-moraes-gabriel-jesus', 'Gabriel Moraes e Gabriel de Jesus', 'menino', 2),
+  grupo('pedro-gustavo', 'Dc. Pedro e Gustavo', 'menino', 2),
+
+  // Zona 3 — William e Felipe
+  grupo('joao-pedro-naves-daniel-wagner', 'João Pedro Naves e Daniel Wagner', 'menino', 3),
+  grupo('mateus-gabriel-palacio', 'Mateus e Gabriel Palácio', 'menino', 3),
+
+  // Zona 4 — Yasmin e Thalyta
+  grupo('jessica-paula', 'Jéssica e Paula', 'menina', 4),
+  grupo('phublyane-anna-gabriella', 'Phublyane e Anna Gabriella', 'menina', 4),
+  grupo('tamires-ester-rodrigues', 'Tamires e Ester Rodrigues', 'menina', 4),
+  grupo('gama-sara-franco', 'Gama e Sara Franco', 'menina', 4),
+  grupo('roberta-diuliana', 'Roberta e Diuliana', 'menina', 4),
+  grupo('bianca-debora', 'Bianca e Débora', 'menina', 4),
+
+  // Zona 5 — Ester
+  grupo('thalyta-l', 'Dc. Thalyta L', 'menina', 5),
+  grupo('maria-laura-elisa', 'Maria Laura e Elisa', 'menina', 5),
+  grupo('isadora-leticia-magalhaes', 'Isadora e Letícia Magalhães', 'menina', 5),
+  grupo('fernanda-manu', 'Fernanda e Manu', 'menina', 5),
+  grupo('vitoria-ferreira-lorrana', 'Vitória Ferreira e Lorrana', 'menina', 5),
+
+  // Zona 6 — Caroline e Sabrina
+  grupo('amanda-g-brenda', 'Amanda G. e Brenda', 'menina', 6),
+  grupo('vitoria-lima-ana-clara', 'Vitória Lima e Ana Clara', 'menina', 6),
+  grupo('y-bastos-luana', 'Y. Bastos e Luana', 'menina', 6),
+  grupo('ana-lia-ester-machado', 'Ana Lia e Ester Machado', 'menina', 6),
+  grupo('y-moraes-beatriz', 'Dc. Y. Moraes e Beatriz', 'menina', 6),
+
+  // Zona 7 — Amanda e Maria Laura
+  grupo('sophia-m-sabrina', 'Sophia M. e Sabrina', 'menina', 7),
+  grupo('taisa-lia', 'Taísa e Lia', 'menina', 7),
+  grupo('emily-maria-eugenia', 'Emily e Maria Eugenia', 'menina', 7),
+  grupo('thais-gaminha', 'Thaís e Gaminha', 'menina', 7),
 ];
