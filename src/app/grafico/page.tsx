@@ -102,7 +102,7 @@ export default function GraficoPage() {
     }
     return distribuicao.map(grupo => {
       const real = reais.get(grupo.numero)?.total || 0;
-      return { ...grupo, total: transicao < 1 ? grupo.total : Math.max(1, Math.round(grupo.total * (1 - transicao) + real * transicao)) };
+      return { ...grupo, total: transicao >= 1 ? real : Math.max(1, Math.round(grupo.total * (1 - transicao) + real * transicao)) };
     });
   }, [agora, cidade, delayMs, gruposReais, inicioSuspense, modoSuspense]);
   const progressoSuspense = modoSuspense && inicioSuspense ? Math.min(1, Math.max(0, (agora - inicioSuspense) / delayMs)) : 1;
